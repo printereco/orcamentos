@@ -650,22 +650,16 @@
       rows.forEach(function(row) {
         var ins = row.querySelectorAll('input');
         var d2 = ins[0].value.trim(), q2 = parseFloat(ins[1].value)||0, u2 = parseFloat(ins[2].value)||0;
-        if (d2) { it2.push([d2, q2, u2]); }
+        if (d2) { it2.push([d2,q2,u2]); }
       });
-      var orc = {
-        c: cliente,
-        cc: document.getElementById('cnpjCliente').value.trim(),
-        r: ref, v: val,
-        dv: discVal, dt: tipo,
-        it: it2,
-        en: cfg.nome||'',
-        ec: cfg.cnpj||''
-      };
-      if (obs) { orc.o = obs; }
-      if (cfg.tel) { orc.et = cfg.tel; }
-      if (cfg.email) { orc.ee = cfg.email; }
+      var orc = [
+        cliente,
+        document.getElementById('cnpjCliente').value.trim(),
+        ref, val, discVal, tipo, it2,
+        cfg.nome||'', cfg.cnpj||''
+      ];
       var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(orc))));
-      var linkOrc = 'https://printereco.github.io/orcamentos/ver.html#' + b64;
+      var linkOrc = 'https://printereco.github.io/orcamentos/ver.html#orc=' + b64;
       msg += nl + nl + '*Visualizar orçamento:*' + nl + linkOrc;
     } catch(e) {}
     var tel = (cfg.tel || '').replace(/[^0-9]/g, '');

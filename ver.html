@@ -110,12 +110,22 @@
   if (!hash || hash.indexOf('#orc=') !== 0) return;
 
   try {
-    var raw = hash.substring(1);
-    var json = decodeURIComponent(escape(atob(raw)));
-    var d = JSON.parse(json);
-    if (!d.it) { d.it = []; }
-    if (Array.isArray(d.it[0])) {
-      d.it = d.it.map(function(i) { return { d: i[0], q: i[1], u: i[2] }; });
+    var raw = hash.replace('#orc=', '').replace('#', '');
+    var parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    var d;
+    if (Array.isArray(parsed)) {
+      d = {
+        c: parsed[0], cc: parsed[1], r: parsed[2], v: parsed[3],
+        dv: parsed[4], dt: parsed[5],
+        it: (parsed[6]||[]).map(function(i){ return {d:i[0],q:i[1],u:i[2]}; }),
+        en: parsed[7]||'', ec: parsed[8]||''
+      };
+    } else {
+      d = parsed;
+      if (!d.it) { d.it = []; }
+      if (d.it.length && Array.isArray(d.it[0])) {
+        d.it = d.it.map(function(i){ return {d:i[0],q:i[1],u:i[2]}; });
+      }
     }
 
     var sub = 0;
