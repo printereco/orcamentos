@@ -69,6 +69,7 @@
     .client-grid > div:last-child { grid-column: 1 / -1; }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 </head>
 <body>
 <div class="card" id="cardOrc">
@@ -94,9 +95,15 @@
   if (!hash || hash.indexOf('#orc=') !== 0) return;
 
   try {
-    var b64  = hash.replace('#orc=', '');
-    var json = decodeURIComponent(escape(atob(b64)));
-    var d    = JSON.parse(json);
+    var raw = hash.replace('#orc=', '');
+    var json;
+    try {
+      json = LZString.decompressFromEncodedURIComponent(raw);
+      if (!json) { json = decodeURIComponent(escape(atob(raw))); }
+    } catch(e) {
+      json = decodeURIComponent(escape(atob(raw)));
+    }
+    var d = JSON.parse(json);
 
     var sub = 0;
     var itensRows = '';

@@ -656,9 +656,10 @@
         var desc = ins[0].value.trim(), qty = parseFloat(ins[1].value)||0, unit = parseFloat(ins[2].value)||0;
         if (desc) { dados.it.push({ d: desc, q: qty, u: unit }); }
       });
-      var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(dados))));
+      var jsonStr = JSON.stringify(dados);
+      var compressed = LZString.compressToEncodedURIComponent(jsonStr);
       var base = 'https://printereco.github.io/orcamentos/ver.html';
-      var linkOrc = base + '#orc=' + b64;
+      var linkOrc = base + '#orc=' + compressed;
       msg += nl + nl + '*Visualizar orçamento completo:*' + nl + linkOrc;
     } catch(e) {}
     var tel = (cfg.tel || '').replace(/[^0-9]/g, '');
@@ -771,7 +772,7 @@
     var _nArq = 'PRINTER & CO - Orçamento.pdf'; if (window.showSaveFilePicker) { var _blob = doc.output('blob'); window.showSaveFilePicker({ suggestedName: _nArq, types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }] }).then(function(fh) { fh.createWritable().then(function(w) { w.write(_blob).then(function() { w.close(); }); }); }).catch(function() { doc.save(_nArq); }); } else { doc.save(_nArq); }
   });
   if (!localStorage.getItem('printerCo_cfg')) {
-    try { localStorage.setItem('printerCo_cfg', JSON.stringify({ nome:'PRINTER & CO Servicos de impressao', cnpj:'55.293.091/0001-92', tel:'', email:'', end:'' })); } catch(e) {}
+    try { localStorage.setItem('printerCo_cfg', JSON.stringify({ nome:'PRINTER & CO Serviços de impressão', cnpj:'55.293.091/0001-92', tel:'', email:'', end:'' })); } catch(e) {}
   }
 
   // CLIENTES PARCEIROS
@@ -928,5 +929,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 </body>
 </html>
