@@ -646,21 +646,27 @@
     if (obs) { msg += nl + nl + obs; }
     msg += nl + nl + 'Em caso de dúvidas, estamos à disposição!';
     try {
-      var dados = {
-        c: cliente, cc: document.getElementById('cnpjCliente').value.trim(),
-        r: ref, v: val, o: obs, dv: discVal, dt: tipo, it: [],
-        en: cfg.nome||'', ec: cfg.cnpj||'', et: cfg.tel||'', ee: cfg.email||'', ea: cfg.end||''
-      };
+      var it2 = [];
       rows.forEach(function(row) {
         var ins = row.querySelectorAll('input');
-        var desc = ins[0].value.trim(), qty = parseFloat(ins[1].value)||0, unit = parseFloat(ins[2].value)||0;
-        if (desc) { dados.it.push({ d: desc, q: qty, u: unit }); }
+        var d2 = ins[0].value.trim(), q2 = parseFloat(ins[1].value)||0, u2 = parseFloat(ins[2].value)||0;
+        if (d2) { it2.push([d2, q2, u2]); }
       });
-      var jsonStr = JSON.stringify(dados);
-      var compressed = LZString.compressToEncodedURIComponent(jsonStr);
-      var base = 'https://printereco.github.io/orcamentos/ver.html';
-      var linkOrc = base + '#orc=' + compressed;
-      msg += nl + nl + '*Visualizar orçamento completo:*' + nl + linkOrc;
+      var orc = {
+        c: cliente,
+        cc: document.getElementById('cnpjCliente').value.trim(),
+        r: ref, v: val,
+        dv: discVal, dt: tipo,
+        it: it2,
+        en: cfg.nome||'',
+        ec: cfg.cnpj||''
+      };
+      if (obs) { orc.o = obs; }
+      if (cfg.tel) { orc.et = cfg.tel; }
+      if (cfg.email) { orc.ee = cfg.email; }
+      var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(orc))));
+      var linkOrc = 'https://printereco.github.io/orcamentos/ver.html#' + b64;
+      msg += nl + nl + '*Visualizar orçamento:*' + nl + linkOrc;
     } catch(e) {}
     var tel = (cfg.tel || '').replace(/[^0-9]/g, '');
     var url = tel ? 'https://wa.me/55' + tel + '?text=' + encodeURIComponent(msg) : 'https://wa.me/?text=' + encodeURIComponent(msg);
