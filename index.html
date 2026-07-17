@@ -666,7 +666,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.5</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.6</div>
 </div>
 
 
@@ -679,7 +679,7 @@
       <div class="admin-card">
         <div class="admin-card-header">
           <span>Usuários cadastrados</span>
-          <button class="btn-new-user" onclick="abrirModalNovoUsuario()">
+<button class="btn-new-user" onclick="abrirModalNovoUsuario()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo usuário
           </button>
@@ -1422,41 +1422,36 @@ function lerLinkOrcamento() {
   }
 
   function criarUsuario() {
-    var nome   = document.getElementById('newUserNome').value.trim().toLowerCase();
-    var senha  = document.getElementById('newUserSenha').value;
-    var btn    = document.getElementById('btnSalvarUsuario');
+    var nome  = document.getElementById('newUserNome').value.trim().toLowerCase();
+    var senha = document.getElementById('newUserSenha').value;
+    var btn   = document.getElementById('btnSalvarUsuario');
     if (!nome || !senha || senha.length < 6) {
       toast('Preencha usuário e senha (mín. 6 caracteres).');
       return;
     }
     btn.disabled = true; btn.textContent = 'Criando...';
-    var sess = JSON.parse(localStorage.getItem('printerCo_session')||'{}');
-    fetch(SURL_AUTH + '/auth/v1/admin/users', {
+    fetch('https://cxgpuwqihdojisishmzv.supabase.co/functions/v1/criar-usuario', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SKEY_AUTH,
-        'Authorization': 'Bearer ' + (sess.access_token||SKEY_AUTH)
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w',
+        'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w'
       },
-      body: JSON.stringify({
-        email: nome + '@printer.interno',
-        password: senha,
-        email_confirm: true
-      })
+      body: JSON.stringify({ usuario: nome, senha: senha })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.id) {
         fecharModalNovoUsuario();
-        toast('Usuário ' + nome + ' criado!');
+        toast('Usuário ' + nome + ' criado com sucesso!');
         carregarUsuarios();
       } else {
-        toast('Erro: ' + (data.message || 'Tente novamente.'));
+        toast('Erro: ' + (data.message || data.error || 'Tente novamente.'));
       }
       btn.disabled = false; btn.textContent = 'Criar usuário';
     })
     .catch(function() {
-      toast('Erro ao criar usuário.');
+      toast('Erro ao criar usuário. Verifique sua conexão.');
       btn.disabled = false; btn.textContent = 'Criar usuário';
     });
   }
