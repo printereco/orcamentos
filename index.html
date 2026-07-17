@@ -690,7 +690,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v3.2</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v3.3</div>
 </div>
 
 
@@ -1167,11 +1167,13 @@
     doc.setFontSize(10); doc.setFont('helvetica','normal');
     doc.text(cnpjCli || '—', colN, y);
     doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(17,17,17);
-    var nomeTrunc = nome.length > 38 ? nome.substring(0,35)+'...' : nome;
-    doc.text(nomeTrunc, colE, y, {align:'right'});
+    var nomeLines = doc.splitTextToSize(nome, 55);
+    doc.text(nomeLines[0], colE, y, {align:'right'});
+    if (nomeLines[1]) { doc.text(nomeLines[1], colE, y+4, {align:'right'}); }
     if (cnpjEmp) {
+      var cnpjY = nomeLines[1] ? y+9 : y+5;
       doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(130,130,130);
-      doc.text(cnpjEmp, colE, y+5, {align:'right'});
+      doc.text(cnpjEmp, colE, cnpjY, {align:'right'});
     }
     var solicitantePDF = document.getElementById('solicitante') ? document.getElementById('solicitante').value.trim() : '';
     if (solicitantePDF) {
