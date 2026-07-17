@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orçamento — Printer &amp; Co.</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,10 +14,10 @@
     --sub: #555555;
     --line: #CCCCCC;
     --bg: #E8E8E8;
-    --mono: 'DM Mono', monospace;
+    --mono: 'Courier New', Courier, monospace;
   }
   body {
-    font-family: 'Sora', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Arial, sans-serif;
     background: #EBEBEB;
     color: var(--ink);
     min-height: 100vh;
@@ -100,11 +99,21 @@
 
   /* MASTHEAD */
     .masthead {
-    background: #111111;
+    background: linear-gradient(135deg, #1a1a1a 0%, #111111 60%, #0d0d0d 100%);
     border-radius: 12px 12px 0 0;
     padding: 2rem 2.5rem;
     display: flex; align-items: center; justify-content: space-between;
     gap: 2rem;
+    border-bottom: 2px solid #E91E8C;
+    position: relative;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px 12px 0 0;
+    background: radial-gradient(ellipse at top right, rgba(233,30,140,0.08) 0%, transparent 60%);
+    pointer-events: none;
   }
   .masthead-logo { height: 72px; width: auto; display: block; }
   .masthead-right { text-align: right; }
@@ -114,13 +123,12 @@
   }
   .masthead-doc-title {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 34px; font-weight: 700; letter-spacing: -0.02em;
+    font-size: 36px; font-weight: 700; letter-spacing: -0.03em;
     color: #ffffff; line-height: 1; margin-bottom: 12px;
+    text-shadow: 0 2px 12px rgba(233,30,140,0.2);
   }
-  .masthead-meta { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
-  .meta-row { display: flex; gap: 8px; align-items: baseline; }
-  .meta-k { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.45); }
-  .meta-v { font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,0.8); }
+  .meta-k { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); }
+  .meta-v { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: rgba(255,255,255,0.85); letter-spacing: 0.04em; }
 
   /* CLIENT */
   .client-row {
@@ -223,7 +231,7 @@
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 16px 0 0; border-top: 1.5px solid var(--ink); margin-top: 8px;
   }
-  .tot-final .fl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #666666; }
+  .tot-final .fl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #333333; }
   .tot-final .fa { font-family: var(--mono); font-size: 26px; font-weight: 500; color: var(--pink); letter-spacing: -0.04em; }
 
   /* REF */
@@ -239,14 +247,15 @@
   /* ACTIONS */
   .actions-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2.5rem; }
   .btn-act {
-    height: 52px; border: none; border-radius: 6px;
-    font-size: 13.5px; font-weight: 700; cursor: pointer;
+    height: 54px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    gap: 9px; letter-spacing: 0.01em; transition: opacity .15s, transform .1s;
+    gap: 10px; letter-spacing: 0.02em;
+    transition: transform .1s, box-shadow .2s, filter .15s;
   }
-  .btn-act:hover { opacity: .85; }
-  .btn-act:active { transform: scale(.98); }
-  .btn-wpp { background: #1DAA61; color: #fff; }
+  .btn-act:hover { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+  .btn-act:active { transform: scale(.97); }
+  .btn-wpp { background: linear-gradient(135deg,#25D366,#1DAA61); color: #fff; box-shadow: 0 4px 14px rgba(29,170,97,.3); }
   .cli-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid #EEE; }
   .cli-row:last-child { border-bottom: none; }
   .cli-av { width: 38px; height: 38px; border-radius: 8px; background: #F0F0F0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #555; flex-shrink: 0; }
@@ -255,7 +264,7 @@
   .cli-cnpj { font-size: 11px; color: #888; margin-top: 2px; }
   .cli-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .btn-link { background: #6C47FF; color: white; }
-  .btn-pdf { background: var(--ink); color: #fff; }
+  .btn-pdf { background: linear-gradient(135deg,#333,#111); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
 
   /* CONFIG */
   .btn-cfg {
@@ -721,12 +730,47 @@
   <div class="panel" id="panelFinanceiro">
     <div class="admin-wrap">
       <div class="admin-header">Financeiro</div>
+
+      <!-- KPI Cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+        <div style="background:#fff;border-radius:12px;padding:1.25rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#AAA;margin-bottom:8px">Emitido no mês</div>
+          <div style="font-size:22px;font-weight:700;color:#111" id="kpiEmitido">R$ 0,00</div>
+          <div style="font-size:11px;color:#AAA;margin-top:4px" id="kpiEmitidoQtd">0 orçamentos</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:1.25rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#AAA;margin-bottom:8px">Recebido</div>
+          <div style="font-size:22px;font-weight:700;color:#2E7D32" id="kpiRecebido">R$ 0,00</div>
+          <div style="font-size:11px;color:#AAA;margin-top:4px">Orçamentos pagos</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:1.25rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#AAA;margin-bottom:8px">A receber</div>
+          <div style="font-size:22px;font-weight:700;color:#E91E8C" id="kpiAReceber">R$ 0,00</div>
+          <div style="font-size:11px;color:#AAA;margin-top:4px">Pendentes</div>
+        </div>
+      </div>
+
+      <!-- Lista de orçamentos financeiros -->
       <div class="admin-card">
-        <div class="admin-card-header">Em desenvolvimento</div>
-        <div class="admin-card-body" style="padding:2rem;text-align:center;color:#AAA">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#DDD" stroke-width="1.5" style="margin-bottom:1rem"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <p style="font-size:14px;margin-bottom:6px">Módulo financeiro em construção</p>
-          <p style="font-size:12px">Em breve: controle de receitas, despesas e relatórios</p>
+        <div class="admin-card-header">
+          <span>Orçamentos</span>
+          <select id="filtroMesFinanceiro" style="background:#222;color:#fff;border:1px solid #444;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">
+            <option value="">Todos os meses</option>
+            <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+            <option value="03">Março</option><option value="04">Abril</option>
+            <option value="05">Maio</option><option value="06">Junho</option>
+            <option value="07">Julho</option><option value="08">Agosto</option>
+            <option value="09">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div class="admin-card-body" style="padding:0">
+          <div id="financeiroListBody">
+            <div style="text-align:center;padding:2.5rem;color:#AAA;font-size:13px">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#DDD" stroke-width="1.5" style="display:block;margin:0 auto 12px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Módulo em construção — em breve controle de receitas e despesas
+            </div>
+          </div>
         </div>
       </div>
     </div>
