@@ -666,7 +666,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.3</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.5</div>
 </div>
 
 
@@ -1285,6 +1285,18 @@ function lerLinkOrcamento() {
   var SKEY_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDIzODM3OSwiZXhwIjoyMDk5ODE0Mzc5fQ.OQWceVIRCkzBxCnaDxWCOyWWr9JFKAcTVBOzwZmMghU';
   var _editUserId = null;
 
+  // Event delegation para botões da tabela
+  document.getElementById('usersTableBody').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    var uid  = btn.getAttribute('data-uid');
+    var nome = btn.getAttribute('data-nome');
+    var act  = btn.getAttribute('data-act');
+    if (act === 'senha')    { abrirEditSenha(uid, nome); }
+    if (act === 'desativar') { toggleUsuario(uid, true); }
+    if (act === 'ativar')   { toggleUsuario(uid, false); }
+  });
+
   function carregarUsuarios() {
     var tbody = document.getElementById('usersTableBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#AAA;padding:20px">Carregando...</td></tr>';
@@ -1307,12 +1319,14 @@ function lerLinkOrcamento() {
         var badge = isAdmin ? '<span class="badge-admin">Admin</span>' : '<span class="badge-user">Usuário</span>';
         var status = isBanned ? '<span class="badge-disabled">Inativo</span>' : '<span class="badge-active">Ativo</span>';
         var criado = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
-        var acoes = isAdmin ? '—' : '<div style="display:flex;gap:6px">'
-          + '<button class="btn-action edit" onclick="abrirEditSenha(\''+u.id+'\',\''+nomeFormatado+'\')">Senha</button>'
-          + (isBanned
-            ? '<button class="btn-action enable" onclick="toggleUsuario(\''+u.id+'\',false)">Ativar</button>'
-            : '<button class="btn-action disable" onclick="toggleUsuario(\''+u.id+'\',true)">Desativar</button>')
-          + '</div>';
+        var acoes = isAdmin ? '—' : [
+          '<div style="display:flex;gap:6px">',
+          '<button class="btn-action edit" data-uid="'+u.id+'" data-nome="'+nomeFormatado+'" data-act="senha">Senha</button>',
+          isBanned
+            ? '<button class="btn-action enable" data-uid="'+u.id+'" data-act="ativar">Ativar</button>'
+            : '<button class="btn-action disable" data-uid="'+u.id+'" data-act="desativar">Desativar</button>',
+          '</div>'
+        ].join('');
         tbody.innerHTML += '<tr>'
           + '<td><strong>' + nomeFormatado + '</strong></td>'
           + '<td style="color:#888;font-size:12px">' + (u.email||'') + '</td>'
@@ -1340,9 +1354,12 @@ function lerLinkOrcamento() {
     document.getElementById('modalEditSenha').classList.remove('open');
     _editUserId = null;
   }
-  document.getElementById('modalEditSenha').addEventListener('click', function(e) {
-    if (e.target === this) { fecharModalEditSenha(); }
-  });
+  var _modalEditEl = document.getElementById('modalEditSenha');
+  if (_modalEditEl) {
+    _modalEditEl.addEventListener('click', function(e) {
+      if (e.target === this) { fecharModalEditSenha(); }
+    });
+  }
   function salvarNovaSenha() {
     var senha = document.getElementById('editSenhaInput').value;
     var btn = document.getElementById('btnSalvarSenha');
@@ -1397,9 +1414,12 @@ function lerLinkOrcamento() {
   function fecharModalNovoUsuario() {
     document.getElementById('modalNovoUsuario').classList.remove('open');
   }
-  document.getElementById('modalNovoUsuario').addEventListener('click', function(e) {
-    if (e.target === this) { fecharModalNovoUsuario(); }
-  });
+  var _modalNovo = document.getElementById('modalNovoUsuario');
+  if (_modalNovo) {
+    _modalNovo.addEventListener('click', function(e) {
+      if (e.target === this) { fecharModalNovoUsuario(); }
+    });
+  }
 
   function criarUsuario() {
     var nome   = document.getElementById('newUserNome').value.trim().toLowerCase();
@@ -1450,16 +1470,16 @@ function lerLinkOrcamento() {
   updateMeta(); loadCfg(); addItem();
   lerLinkOrcamento();
 
-  // Expor funções admin globalmente (necessário para onclick no HTML)
-  window.showPanel = showPanel;
-  window.abrirModalNovoUsuario = abrirModalNovoUsuario;
+  // Expor funções globalmente (onclick no HTML precisa de escopo global)
+  window.showPanel            = showPanel;
+  window.logout               = logout;
+  window.abrirModalNovoUsuario  = abrirModalNovoUsuario;
   window.fecharModalNovoUsuario = fecharModalNovoUsuario;
-  window.criarUsuario = criarUsuario;
-  window.logout = logout;
-  window.abrirEditSenha = abrirEditSenha;
+  window.criarUsuario         = criarUsuario;
+  window.abrirEditSenha       = abrirEditSenha;
   window.fecharModalEditSenha = fecharModalEditSenha;
-  window.salvarNovaSenha = salvarNovaSenha;
-  window.toggleUsuario = toggleUsuario;
+  window.salvarNovaSenha      = salvarNovaSenha;
+  window.toggleUsuario        = toggleUsuario;
 })();
 </script>
 
