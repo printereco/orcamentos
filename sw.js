@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-v16';
+var CACHE = 'printer-orcamento-v17';
 
 self.addEventListener('install', function(e) {
   e.waitUntil(
