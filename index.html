@@ -247,6 +247,13 @@
   .btn-act:hover { opacity: .85; }
   .btn-act:active { transform: scale(.98); }
   .btn-wpp { background: #1DAA61; color: #fff; }
+  .cli-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid #EEE; }
+  .cli-row:last-child { border-bottom: none; }
+  .cli-av { width: 38px; height: 38px; border-radius: 8px; background: #F0F0F0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #555; flex-shrink: 0; }
+  .cli-info { flex: 1; min-width: 0; }
+  .cli-nome { font-size: 13px; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cli-cnpj { font-size: 11px; color: #888; margin-top: 2px; }
+  .cli-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .btn-link { background: #6C47FF; color: white; }
   .btn-pdf { background: var(--ink); color: #fff; }
 
@@ -481,6 +488,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Orçamentos
     </div>
+    <div class="nav-item" id="navClientes" onclick="showPanel('clientes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clientes
+    </div>
     <div class="nav-item" id="navFinanceiro" onclick="showPanel('financeiro')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Financeiro
@@ -540,7 +551,6 @@
       <label>Cliente / Empresa</label>
       <div class="cliente-input-row">
         <input type="text" id="nomeCliente" placeholder="Buscar ou digitar cliente..." autocomplete="off">
-        <button class="btn-add-cliente no-print" id="btnAddCliente" title="Cadastrar novo cliente">+</button>
       </div>
       <div class="cliente-dropdown" id="clienteDropdown"></div>
     </div>
@@ -674,11 +684,32 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.8</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.9</div>
 </div>
 
 
   </div><!-- fim panelOrcamentos -->
+
+  <!-- PAINEL: CLIENTES -->
+  <div class="panel" id="panelClientes">
+    <div class="admin-wrap">
+      <div class="admin-header">Clientes</div>
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <span>Clientes cadastrados</span>
+          <button class="btn-new-user" onclick="abrirModalNovoCliente()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo cliente
+          </button>
+        </div>
+        <div class="admin-card-body" style="padding:0">
+          <div id="clientesListBody" style="min-height:60px">
+            <div style="text-align:center;padding:20px;color:#AAA;font-size:13px">Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- PAINEL: FINANCEIRO -->
   <div class="panel" id="panelFinanceiro">
@@ -744,6 +775,44 @@
     </div>
   </div>
 </div>
+<!-- MODAL CLIENTE -->
+<div class="modal-edit-bg" id="modalCliente2">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-title" id="modalClienteTitulo">Novo cliente</div>
+    <input type="hidden" id="clienteEditId">
+    <div class="modal-field">
+      <label>Nome da empresa</label>
+      <input type="text" id="cliNome" placeholder="Ex: AN COM Eventos e Soluções Ltda">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="modal-field">
+        <label>CNPJ</label>
+        <input type="text" id="cliCnpj" placeholder="00.000.000/0001-00">
+      </div>
+      <div class="modal-field">
+        <label>Insc. Municipal</label>
+        <input type="text" id="cliInscMun" placeholder="Opcional">
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Insc. Estadual</label>
+      <input type="text" id="cliInscEst" placeholder="Isento ou número">
+    </div>
+    <div class="modal-field">
+      <label>Endereço</label>
+      <input type="text" id="cliEnd" placeholder="Rua, número, bairro, cidade - UF">
+    </div>
+    <div class="modal-field">
+      <label>E-mail</label>
+      <input type="email" id="cliEmail" placeholder="email@empresa.com.br">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModalCliente2()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarCliente2" onclick="salvarCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ALTERAR MINHA SENHA -->
 <div class="modal-edit-bg" id="modalAlterarSenha">
   <div class="modal-box">
@@ -1261,10 +1330,13 @@ function lerLinkOrcamento() {
   function showPanel(panel) {
     document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-    document.getElementById('panel' + panel.charAt(0).toUpperCase() + panel.slice(1)).classList.add('active');
-    document.getElementById('nav' + panel.charAt(0).toUpperCase() + panel.slice(1)).classList.add('active');
+    var panelEl = document.getElementById('panel' + panel.charAt(0).toUpperCase() + panel.slice(1));
+    var navEl   = document.getElementById('nav'   + panel.charAt(0).toUpperCase() + panel.slice(1));
+    if (panelEl) panelEl.classList.add('active');
+    if (navEl)   navEl.classList.add('active');
     closeSidebar();
-    if (panel === 'admin') { carregarUsuarios(); }
+    if (panel === 'admin')    { carregarUsuarios(); }
+    if (panel === 'clientes') { renderListaClientes(); }
   }
 
   function openSidebar() {
@@ -1507,6 +1579,98 @@ function lerLinkOrcamento() {
     var el = document.getElementById('validade');
     if (el) { el.valueAsDate = new Date(); }
   })();
+
+  // ── MÓDULO CLIENTES ──
+  var KEY_CLI = 'printerCo_clientes_v2';
+  function getClientes() { try { return JSON.parse(localStorage.getItem(KEY_CLI)||'[]'); } catch(e) { return []; } }
+  function setClientes(l) { localStorage.setItem(KEY_CLI, JSON.stringify(l)); }
+
+  function renderListaClientes() {
+    var lista = getClientes();
+    var body = document.getElementById('clientesListBody');
+    if (!body) return;
+    if (lista.length === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:2rem;color:#AAA;font-size:13px">Nenhum cliente cadastrado.</div>';
+      return;
+    }
+    lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
+    body.innerHTML = lista.map(function(c,i) {
+      var ini = (c.nome||'?').split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();
+      return '<div class="cli-row">'
+        +'<div class="cli-av">'+ini+'</div>'
+        +'<div class="cli-info"><div class="cli-nome">'+(c.nome||'—')+'</div>'
+        +'<div class="cli-cnpj">'+(c.cnpj?'CNPJ: '+c.cnpj:'')+(c.email?' · '+c.email:'')+'</div></div>'
+        +'<div class="cli-btns">'
+          +'<button class="btn-action edit" data-cli-idx="'+i+'" data-cli-act="editar">Editar</button>'
+          +'<button class="btn-action disable" data-cli-idx="'+i+'" data-cli-act="excluir">Excluir</button>'
+        +'</div></div>';
+    }).join('');
+    body.onclick = function(e) {
+      var btn = e.target.closest('[data-cli-act]');
+      if (!btn) return;
+      var idx = parseInt(btn.getAttribute('data-cli-idx'));
+      var act = btn.getAttribute('data-cli-act');
+      if (act==='editar') { editarCliente(idx); }
+      if (act==='excluir') { excluirCliente(idx); }
+    };
+  }
+
+  function abrirModalNovoCliente() {
+    document.getElementById('clienteEditId').value='';
+    ['cliNome','cliCnpj','cliInscMun','cliInscEst','cliEnd','cliEmail'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('modalClienteTitulo').textContent='Novo cliente';
+    document.getElementById('modalCliente2').classList.add('open');
+    document.getElementById('cliNome').focus();
+  }
+  function editarCliente(idx) {
+    var c = getClientes()[idx]; if (!c) return;
+    document.getElementById('clienteEditId').value=idx;
+    document.getElementById('cliNome').value=c.nome||'';
+    document.getElementById('cliCnpj').value=c.cnpj||'';
+    document.getElementById('cliInscMun').value=c.inscMun||'';
+    document.getElementById('cliInscEst').value=c.inscEst||'';
+    document.getElementById('cliEnd').value=c.end||'';
+    document.getElementById('cliEmail').value=c.email||'';
+    document.getElementById('modalClienteTitulo').textContent='Editar cliente';
+    document.getElementById('modalCliente2').classList.add('open');
+    document.getElementById('cliNome').focus();
+  }
+  function fecharModalCliente2() { document.getElementById('modalCliente2').classList.remove('open'); }
+  var _modalCli2 = document.getElementById('modalCliente2');
+  if (_modalCli2) { _modalCli2.addEventListener('click', function(e){ if(e.target===this){fecharModalCliente2();} }); }
+
+  function salvarCliente() {
+    var nome = document.getElementById('cliNome').value.trim();
+    if (!nome) { toast('Informe o nome da empresa.'); return; }
+    var c = { nome:nome, cnpj:document.getElementById('cliCnpj').value.trim(),
+      inscMun:document.getElementById('cliInscMun').value.trim(),
+      inscEst:document.getElementById('cliInscEst').value.trim(),
+      end:document.getElementById('cliEnd').value.trim(),
+      email:document.getElementById('cliEmail').value.trim() };
+    var lista = getClientes();
+    var editIdx = document.getElementById('clienteEditId').value;
+    if (editIdx!=='') { lista[parseInt(editIdx)]=c; toast('Cliente atualizado!'); }
+    else { lista.push(c); toast('Cliente cadastrado!'); }
+    setClientes(lista);
+    fecharModalCliente2();
+    renderListaClientes();
+  }
+  function excluirCliente(idx) {
+    var lista = getClientes();
+    var nome = lista[idx]?lista[idx].nome:'';
+    if (!confirm('Excluir '+nome+'?')) return;
+    lista.splice(idx,1); setClientes(lista); renderListaClientes(); toast('Cliente excluído.');
+  }
+
+  // Migrar clientes antigos
+  (function(){
+    var ant=[]; try{ant=JSON.parse(localStorage.getItem('printerCo_clientes')||'[]');}catch(e){}
+    if(ant.length>0&&getClientes().length===0){
+      setClientes(ant.map(function(c){return{nome:c.nome||c,cnpj:c.cnpj||'',inscMun:'',inscEst:'',end:'',email:c.email||''};}));
+    }
+  })();
+  // ── FIM MÓDULO CLIENTES ──
+
   updateMeta(); loadCfg(); addItem();
   lerLinkOrcamento();
 
@@ -1561,7 +1725,13 @@ function lerLinkOrcamento() {
   }
 
   // Expor funções globalmente
-  window.showPanel            = showPanel;
+  window.showPanel              = showPanel;
+  window.abrirModalNovoCliente  = abrirModalNovoCliente;
+  window.fecharModalCliente2    = fecharModalCliente2;
+  window.salvarCliente          = salvarCliente;
+  window.abrirModalNovoCliente  = abrirModalNovoCliente;
+  window.fecharModalCliente2    = fecharModalCliente2;
+  window.salvarCliente          = salvarCliente;
   window.abrirAlterarSenha   = abrirAlterarSenha;
   window.fecharAlterarSenha  = fecharAlterarSenha;
   window.confirmarAlterarSenha = confirmarAlterarSenha;
