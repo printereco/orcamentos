@@ -487,7 +487,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v1.3</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.0</div>
 </div>
 
 <div class="toast" id="toastBox"></div>
@@ -496,6 +496,58 @@
 <script>
 (function() {
   var _cnt = 0;
+
+
+  // ════════════════════════════════════════════════════
+  // SUPABASE SERVICE — camada de abstração de dados
+  // Para trocar de banco no futuro, altere apenas este bloco
+  // ════════════════════════════════════════════════════
+  var SupabaseService = (function() {
+    var URL  = 'https://cxgpuwqihdojisishmzv.supabase.co';
+    var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MDYxNjIsImV4cCI6MjA2ODk4MjE2Mn0.placeholder';
+    var BASE = URL + '/rest/v1/orcamentos';
+    var HEADERS = {
+      'Content-Type': 'application/json',
+      'apikey': KEY,
+      'Authorization': 'Bearer ' + KEY,
+      'Prefer': 'return=representation'
+    };
+
+    function salvar(dados) {
+      return fetch(BASE, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify(dados)
+      })
+      .then(function(r) {
+        if (!r.ok) { throw new Error('Erro ao salvar: ' + r.status); }
+        return r.json();
+      })
+      .then(function(rows) {
+        return rows[0].id;
+      });
+    }
+
+    function buscar(id) {
+      return fetch(BASE + '?id=eq.' + id + '&select=*', {
+        headers: {
+          'apikey': KEY,
+          'Authorization': 'Bearer ' + KEY
+        }
+      })
+      .then(function(r) {
+        if (!r.ok) { throw new Error('Erro ao buscar: ' + r.status); }
+        return r.json();
+      })
+      .then(function(rows) {
+        if (!rows || rows.length === 0) { throw new Error('Orçamento não encontrado'); }
+        return rows[0];
+      });
+    }
+
+    return { salvar: salvar, buscar: buscar };
+  })();
+  // ════════════════════════════════════════════════════
 
   function fmt(v) {
     return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -650,21 +702,34 @@
       rows.forEach(function(row) {
         var ins = row.querySelectorAll('input');
         var d2 = ins[0].value.trim(), q2 = parseFloat(ins[1].value)||0, u2 = parseFloat(ins[2].value)||0;
-        if (d2) { it2.push([d2,q2,u2]); }
+        if (d2) { it2.push({ desc: d2, qty: q2, unit: u2 }); }
       });
-      var orc = [
-        cliente,
-        document.getElementById('cnpjCliente').value.trim(),
-        ref, val, discVal, tipo, it2,
-        cfg.nome||'', cfg.cnpj||''
-      ];
-      var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(orc))));
-      var linkOrc = 'https://printereco.github.io/orcamentos/ver.html#orc=' + b64;
-      msg += nl + nl + '*Visualizar orçamento:*' + nl + linkOrc;
-    } catch(e) {}
-    var tel = (cfg.tel || '').replace(/[^0-9]/g, '');
-    var url = tel ? 'https://wa.me/55' + tel + '?text=' + encodeURIComponent(msg) : 'https://wa.me/?text=' + encodeURIComponent(msg);
-    window.open(url, '_blank');
+      var dadosOrc = {
+        cliente: cliente, cnpj_cli: document.getElementById('cnpjCliente').value.trim(),
+        referencia: ref, valido_ate: val||null, desconto: discVal, tipo_desc: tipo,
+        itens: it2, obs: obs, empresa: cfg.nome||'', cnpj_emp: cfg.cnpj||'',
+        tel_emp: cfg.tel||'', email_emp: cfg.email||''
+      };
+      var btnEl = document.getElementById('btnWpp');
+      if (btnEl) { btnEl.textContent = 'Salvando...'; btnEl.disabled = true; }
+      SupabaseService.salvar(dadosOrc)
+        .then(function(id) {
+          var linkOrc = 'https://printereco.github.io/orcamentos/ver.html?id=' + id;
+          msg += nl + nl + '*Visualizar orçamento:*' + nl + linkOrc;
+          var telN = (cfg.tel||'').replace(/[^0-9]/g,'');
+          var wUrl = telN ? 'https://wa.me/55'+telN+'?text='+encodeURIComponent(msg) : 'https://wa.me/?text='+encodeURIComponent(msg);
+          window.open(wUrl, '_blank');
+        })
+        .catch(function(e) {
+          console.error('Erro Supabase:', e);
+          toast('Erro ao salvar orçamento. Verifique sua conexão.');
+        })
+        .finally(function() {
+          if (btnEl) { btnEl.textContent = 'WhatsApp'; btnEl.disabled = false; }
+        });
+      return;
+    } catch(e) { console.error(e); }
+
   });
     document.getElementById('btnPdf').addEventListener('click', function() {
     document.getElementById('configPanel').classList.remove('open');
