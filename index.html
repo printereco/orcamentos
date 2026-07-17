@@ -1342,6 +1342,13 @@ function lerLinkOrcamento() {
   document.getElementById('validade').valueAsDate = new Date();
   updateMeta(); loadCfg(); addItem();
   lerLinkOrcamento();
+
+  // Expor funções admin globalmente (necessário para onclick no HTML)
+  window.showPanel = showPanel;
+  window.abrirModalNovoUsuario = abrirModalNovoUsuario;
+  window.fecharModalNovoUsuario = fecharModalNovoUsuario;
+  window.criarUsuario = criarUsuario;
+  window.logout = logout;
 })();
 </script>
 
