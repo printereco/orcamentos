@@ -1154,7 +1154,7 @@
     }
     var y=64;
     var colC = ml;
-    var colN = ml + cw * 0.50;
+    var colN = ml + cw * 0.42;
     var colE = pw - mr;
     doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
     doc.text('CLIENTE', colC, y);
@@ -1166,8 +1166,8 @@
     doc.text(clienteTrunc, colC, y);
     doc.setFontSize(10); doc.setFont('helvetica','normal');
     doc.text(cnpjCli || '—', colN, y);
-    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(17,17,17);
-    var nomeTrunc = nome.length > 32 ? nome.substring(0,29)+'...' : nome;
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(17,17,17);
+    var nomeTrunc = nome.length > 38 ? nome.substring(0,35)+'...' : nome;
     doc.text(nomeTrunc, colE, y, {align:'right'});
     if (cnpjEmp) {
       doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(130,130,130);
