@@ -1036,7 +1036,7 @@
       var unit = parseFloat(ins[2].value) || 0;
       var tot  = qty * unit;
       sub += tot;
-      if (desc) { linhas = linhas + '- ' + desc + ' | ' + qty + 'x ' + fmt(unit) + ' = ' + fmt(tot) + String.fromCharCode(10); }
+      if (desc) { linhas = linhas + '- ' + desc + ' · Qtd: ' + qty + ' · Total: ' + fmt(tot) + String.fromCharCode(10); }
     });
     var discVal   = parseFloat(document.getElementById('desconto').value) || 0;
     var tipo      = document.getElementById('descontoTipo').value;
