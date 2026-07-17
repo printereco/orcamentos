@@ -1308,10 +1308,10 @@ function lerLinkOrcamento() {
         var status = isBanned ? '<span class="badge-disabled">Inativo</span>' : '<span class="badge-active">Ativo</span>';
         var criado = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
         var acoes = isAdmin ? '—' : '<div style="display:flex;gap:6px">'
-          + '<button class="btn-action edit" onclick="abrirEditSenha('' + u.id + '','' + nomeFormatado + '')">Senha</button>'
+          + '<button class="btn-action edit" onclick="abrirEditSenha(\''+u.id+'\',\''+nomeFormatado+'\')">Senha</button>'
           + (isBanned
-            ? '<button class="btn-action enable" onclick="toggleUsuario('' + u.id + '',false)">Ativar</button>'
-            : '<button class="btn-action disable" onclick="toggleUsuario('' + u.id + '',true)">Desativar</button>')
+            ? '<button class="btn-action enable" onclick="toggleUsuario(\''+u.id+'\',false)">Ativar</button>'
+            : '<button class="btn-action disable" onclick="toggleUsuario(\''+u.id+'\',true)">Desativar</button>')
           + '</div>';
         tbody.innerHTML += '<tr>'
           + '<td><strong>' + nomeFormatado + '</strong></td>'
