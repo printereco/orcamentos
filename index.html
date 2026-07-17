@@ -666,7 +666,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.2</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.3</div>
 </div>
 
 
@@ -1240,17 +1240,44 @@ function lerLinkOrcamento() {
     if (!sess) return;
     try {
       var s = JSON.parse(sess);
-      var email = (s.user && s.user.email) || '';
-      var nome = email.replace('@printer.interno', '');
-      var iniciais = nome.substring(0,2).toUpperCase();
-      document.getElementById('sidebarAvatar').textContent = iniciais;
-      document.getElementById('sidebarUsername').textContent = nome.charAt(0).toUpperCase() + nome.slice(1);
-      // Mostrar menu admin só para o administrador
-      if (email === ADMIN_EMAIL) {
-        document.getElementById('sidebarRole').textContent = 'Administrador';
-        document.getElementById('navSectionAdmin').style.display = '';
-        document.getElementById('navAdmin').style.display = '';
-      }
+      var token = s.access_token || '';
+      if (!token) return;
+
+      // Buscar dados do usuário via token
+      fetch('https://cxgpuwqihdojisishmzv.supabase.co/auth/v1/user', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w', 'Authorization': 'Bearer ' + token }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(u) {
+        var email = u.email || '';
+        var nome = email.replace('@printer.interno', '');
+        var iniciais = nome.substring(0,2).toUpperCase();
+        var avatar = document.getElementById('sidebarAvatar');
+        if (avatar) avatar.textContent = iniciais;
+        var usernameEl = document.getElementById('sidebarUsername');
+        if (usernameEl) usernameEl.textContent = nome.charAt(0).toUpperCase() + nome.slice(1);
+        if (email === ADMIN_EMAIL) {
+          var roleEl = document.getElementById('sidebarRole');
+          if (roleEl) roleEl.textContent = 'Administrador';
+          var secEl = document.getElementById('navSectionAdmin');
+          if (secEl) secEl.style.display = '';
+          var navEl = document.getElementById('navAdmin');
+          if (navEl) navEl.style.display = '';
+        }
+        // Salvar email na sessão para uso futuro
+        s.user = s.user || {};
+        s.user.email = email;
+        localStorage.setItem('printerCo_session', JSON.stringify(s));
+      })
+      .catch(function() {
+        // Fallback: usar dados salvos
+        var email = (s.user && s.user.email) || '';
+        if (email) {
+          var nome = email.replace('@printer.interno', '');
+          var el = document.getElementById('sidebarUsername');
+          if (el) el.textContent = nome.charAt(0).toUpperCase() + nome.slice(1);
+        }
+      });
     } catch(e) {}
   })();
 
@@ -1415,7 +1442,11 @@ function lerLinkOrcamento() {
   }
   // ── FIM MENU E ADMIN ──────────────────────────────────
 
-  document.getElementById('validade').valueAsDate = new Date();
+  // Definir data de hoje
+  (function() {
+    var el = document.getElementById('validade');
+    if (el) { el.valueAsDate = new Date(); }
+  })();
   updateMeta(); loadCfg(); addItem();
   lerLinkOrcamento();
 
