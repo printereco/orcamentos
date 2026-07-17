@@ -756,7 +756,7 @@
       WhatsApp
     </button>
     <button class="btn-act btn-pdf" id="btnPdf">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v3.4zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
       Salvar PDF
     </button>
     
@@ -1381,27 +1381,31 @@
   var clienteInput = document.getElementById('nomeCliente');
   var clienteDropdown = document.getElementById('clienteDropdown');
   function renderDropdown(filtro) {
-    var lista = loadClientes();
     var termo = (filtro || '').toLowerCase();
-    var filtrados = termo ? lista.filter(function(c) { return c.nome.toLowerCase().indexOf(termo) >= 0; }) : lista;
-    clienteDropdown.innerHTML = '';
-    if (filtrados.length === 0) {
-      clienteDropdown.innerHTML = '<div class="cliente-item-vazio">Nenhuma empresa cadastrada</div>';
-    } else {
-      filtrados.forEach(function(c) {
-        var div = document.createElement('div');
-        div.className = 'cliente-item';
-        div.innerHTML = '<div class="cliente-item-nome">' + c.nome + '</div>' + (c.cnpj ? '<div class="cliente-item-cnpj">' + c.cnpj + '</div>' : '');
-        div.addEventListener('click', function() {
-          clienteInput.value = c.nome;
-          document.getElementById('cnpjCliente').value = c.cnpj || '';
-          clienteDropdown.classList.remove('open');
+    function mostrar(lista) {
+      clienteDropdown.innerHTML = '';
+      var filtrados = termo ? lista.filter(function(c){ return (c.nome||'').toLowerCase().indexOf(termo)>=0; }) : lista;
+      if (filtrados.length === 0) {
+        clienteDropdown.innerHTML = '<div class="cliente-item-vazio">Nenhum cliente cadastrado</div>';
+      } else {
+        filtrados.forEach(function(c) {
+          var div = document.createElement('div');
+          div.className = 'cliente-item';
+          div.innerHTML = '<div class="cliente-item-nome">'+(c.nome||'')+'</div>'+(c.cnpj?'<div class="cliente-item-cnpj">'+c.cnpj+'</div>':'');
+          div.addEventListener('click', function() {
+            clienteInput.value = c.nome || '';
+            document.getElementById('cnpjCliente').value = c.cnpj || '';
+            clienteDropdown.classList.remove('open');
+          });
+          clienteDropdown.appendChild(div);
         });
-        clienteDropdown.appendChild(div);
-      });
+      }
+      clienteDropdown.classList.add('open');
     }
-    clienteDropdown.classList.add('open');
+    if (_dropCache.length > 0) { mostrar(_dropCache); return; }
+    getClientes(function(lista) { _dropCache = lista; mostrar(lista); });
   }
+  
   clienteInput.addEventListener('input', function() { renderDropdown(this.value); });
   clienteInput.addEventListener('focus', function() { renderDropdown(this.value); });
   document.addEventListener('click', function(e) {
@@ -1746,41 +1750,50 @@ function lerLinkOrcamento() {
     if (el) { el.valueAsDate = new Date(); }
   })();
 
-  // ── MÓDULO CLIENTES ──
-  var KEY_CLI = 'printerCo_clientes_v2';
-  function getClientes() { try { return JSON.parse(localStorage.getItem(KEY_CLI)||'[]'); } catch(e) { return []; } }
-  function setClientes(l) { localStorage.setItem(KEY_CLI, JSON.stringify(l)); }
+  // ── MÓDULO CLIENTES (Supabase) ──
+  var CLIENTES_URL = 'https://cxgpuwqihdojisishmzv.supabase.co/rest/v1/clientes';
+  var CLIENTES_HDR = { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w', 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
 
-  function renderListaClientes() {
-    var lista = getClientes();
-    var body = document.getElementById('clientesListBody');
-    if (!body) return;
-    if (lista.length === 0) {
-      body.innerHTML = '<div style="text-align:center;padding:2rem;color:#AAA;font-size:13px">Nenhum cliente cadastrado.</div>';
-      return;
-    }
-    lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
-    body.innerHTML = lista.map(function(c,i) {
-      var ini = (c.nome||'?').split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();
-      return '<div class="cli-row">'
-        +'<div class="cli-av">'+ini+'</div>'
-        +'<div class="cli-info"><div class="cli-nome">'+(c.nome||'—')+'</div>'
-        +'<div class="cli-cnpj">'+(c.cnpj?'CNPJ: '+c.cnpj:'')+(c.email?' · '+c.email:'')+'</div></div>'
-        +'<div class="cli-btns">'
-          +'<button class="btn-action edit" data-cli-idx="'+i+'" data-cli-act="editar">Editar</button>'
-          +'<button class="btn-action disable" data-cli-idx="'+i+'" data-cli-act="excluir">Excluir</button>'
-        +'</div></div>';
-    }).join('');
-    body.onclick = function(e) {
-      var btn = e.target.closest('[data-cli-act]');
-      if (!btn) return;
-      var idx = parseInt(btn.getAttribute('data-cli-idx'));
-      var act = btn.getAttribute('data-cli-act');
-      if (act==='editar') { editarCliente(idx); }
-      if (act==='excluir') { excluirCliente(idx); }
-    };
+  function getClientes(cb) {
+    fetch(CLIENTES_URL + '?select=*&order=nome.asc', { headers: CLIENTES_HDR })
+      .then(function(r) { return r.json(); })
+      .then(function(data) { cb(Array.isArray(data) ? data : []); })
+      .catch(function() { cb([]); });
   }
 
+  function renderListaClientes() {
+    var body = document.getElementById('clientesListBody');
+    if (!body) return;
+    body.innerHTML = '<div style="text-align:center;padding:2rem;color:#AAA;font-size:13px">Carregando...</div>';
+    getClientes(function(lista) {
+      _clientesLista = lista;
+      if (lista.length === 0) {
+        body.innerHTML = '<div style="text-align:center;padding:2rem;color:#AAA;font-size:13px">Nenhum cliente cadastrado.</div>';
+        return;
+      }
+      body.innerHTML = lista.map(function(c, i) {
+        var ini = (c.nome||'?').split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();
+        return '<div class="cli-row">'
+          +'<div class="cli-av">'+ini+'</div>'
+          +'<div class="cli-info"><div class="cli-nome">'+(c.nome||'—')+'</div>'
+          +'<div class="cli-cnpj">'+(c.cnpj?'CNPJ: '+c.cnpj:'')+(c.email?' · '+c.email:'')+'</div></div>'
+          +'<div class="cli-btns">'
+            +'<button class="btn-action edit" data-cli-idx="'+i+'" data-cli-act="editar">Editar</button>'
+            +'<button class="btn-action disable" data-cli-id="'+(c.id||'')+'" data-cli-act="excluir">Excluir</button>'
+          +'</div></div>';
+      }).join('');
+      body.onclick = function(e) {
+        var btn = e.target.closest('[data-cli-act]');
+        if (!btn) return;
+        var act = btn.getAttribute('data-cli-act');
+        var idx = parseInt(btn.getAttribute('data-cli-idx'));
+        var id  = btn.getAttribute('data-cli-id');
+        if (act === 'editar')  { editarCliente(idx); }
+        if (act === 'excluir') { excluirCliente(id); }
+      };
+    });
+  }
+  
   function abrirModalNovoCliente() {
     document.getElementById('clienteEditId').value='';
     ['cliNome','cliCnpj','cliInscMun','cliInscEst','cliEnd','cliEmail'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
@@ -1789,15 +1802,15 @@ function lerLinkOrcamento() {
     document.getElementById('cliNome').focus();
   }
   function editarCliente(idx) {
-    var c = getClientes()[idx]; if (!c) return;
-    document.getElementById('clienteEditId').value=idx;
-    document.getElementById('cliNome').value=c.nome||'';
-    document.getElementById('cliCnpj').value=c.cnpj||'';
-    document.getElementById('cliInscMun').value=c.inscMun||'';
-    document.getElementById('cliInscEst').value=c.inscEst||'';
-    document.getElementById('cliEnd').value=c.end||'';
-    document.getElementById('cliEmail').value=c.email||'';
-    document.getElementById('modalClienteTitulo').textContent='Editar cliente';
+    var c = _clientesLista[idx]; if (!c) return;
+    document.getElementById('clienteEditId').value = c.id || '';
+    document.getElementById('cliNome').value    = c.nome    || '';
+    document.getElementById('cliCnpj').value    = c.cnpj    || '';
+    document.getElementById('cliInscMun').value = c.insc_mun|| '';
+    document.getElementById('cliInscEst').value = c.insc_est|| '';
+    document.getElementById('cliEnd').value     = c.endereco || '';
+    document.getElementById('cliEmail').value   = c.email   || '';
+    document.getElementById('modalClienteTitulo').textContent = 'Editar cliente';
     document.getElementById('modalCliente2').classList.add('open');
     document.getElementById('cliNome').focus();
   }
@@ -1808,33 +1821,42 @@ function lerLinkOrcamento() {
   function salvarCliente() {
     var nome = document.getElementById('cliNome').value.trim();
     if (!nome) { toast('Informe o nome da empresa.'); return; }
-    var c = { nome:nome, cnpj:document.getElementById('cliCnpj').value.trim(),
-      inscMun:document.getElementById('cliInscMun').value.trim(),
-      inscEst:document.getElementById('cliInscEst').value.trim(),
-      end:document.getElementById('cliEnd').value.trim(),
-      email:document.getElementById('cliEmail').value.trim() };
-    var lista = getClientes();
-    var editIdx = document.getElementById('clienteEditId').value;
-    if (editIdx!=='') { lista[parseInt(editIdx)]=c; toast('Cliente atualizado!'); }
-    else { lista.push(c); toast('Cliente cadastrado!'); }
-    setClientes(lista);
-    fecharModalCliente2();
-    renderListaClientes();
+    var btn = document.getElementById('btnSalvarCliente2');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+    var dados = {
+      nome:     nome,
+      cnpj:     document.getElementById('cliCnpj').value.trim() || null,
+      insc_mun: document.getElementById('cliInscMun').value.trim() || null,
+      insc_est: document.getElementById('cliInscEst').value.trim() || null,
+      endereco: document.getElementById('cliEnd').value.trim() || null,
+      email:    document.getElementById('cliEmail').value.trim() || null
+    };
+    var editId = document.getElementById('clienteEditId').value;
+    var url    = editId ? CLIENTES_URL + '?id=eq.' + editId : CLIENTES_URL;
+    var method = editId ? 'PATCH' : 'POST';
+    fetch(url, { method: method, headers: CLIENTES_HDR, body: JSON.stringify(dados) })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        fecharModalCliente2();
+        _dropCache = []; toast(editId ? 'Cliente atualizado!' : 'Cliente cadastrado!');
+        renderListaClientes();
+        if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+      })
+      .catch(function() {
+        toast('Erro ao salvar cliente.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+      });
   }
-  function excluirCliente(idx) {
-    var lista = getClientes();
-    var nome = lista[idx]?lista[idx].nome:'';
+  function excluirCliente(id) {
+    var c = _clientesLista.find(function(x){ return String(x.id) === String(id); });
+    var nome = c ? c.nome : '';
     if (!confirm('Excluir '+nome+'?')) return;
-    lista.splice(idx,1); setClientes(lista); renderListaClientes(); toast('Cliente excluído.');
+    fetch(CLIENTES_URL + '?id=eq.' + id, { method: 'DELETE', headers: CLIENTES_HDR })
+      .then(function() { _dropCache = []; toast('Cliente excluído.'); renderListaClientes(); })
+      .catch(function() { toast('Erro ao excluir.'); });
   }
 
-  // Migrar clientes antigos
-  (function(){
-    var ant=[]; try{ant=JSON.parse(localStorage.getItem('printerCo_clientes')||'[]');}catch(e){}
-    if(ant.length>0&&getClientes().length===0){
-      setClientes(ant.map(function(c){return{nome:c.nome||c,cnpj:c.cnpj||'',inscMun:'',inscEst:'',end:'',email:c.email||''};}));
-    }
-  })();
+  // Clientes agora no Supabase
   // ── FIM MÓDULO CLIENTES ──
 
   updateMeta(); loadCfg(); addItem();
