@@ -395,6 +395,17 @@
   .btn-new-user:hover { background: #E91E8C; }
 
   /* MODAL NOVO USUARIO */
+
+  .btn-action { background: none; border: 1px solid #DDD; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-action.edit { color: #111; } .btn-action.edit:hover { background: #111; color: white; border-color: #111; }
+  .btn-action.disable { color: #E24B4A; } .btn-action.disable:hover { background: #E24B4A; color: white; border-color: #E24B4A; }
+  .btn-action.enable { color: #2E7D32; } .btn-action.enable:hover { background: #2E7D32; color: white; border-color: #2E7D32; }
+  .badge-disabled { background: #FFF0F0; color: #E24B4A; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .badge-active { background: #E8F5E9; color: #2E7D32; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+
+  /* MODAL EDITAR SENHA */
+  .modal-edit-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; align-items: center; justify-content: center; }
+  .modal-edit-bg.open { display: flex; }
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
   .modal-bg.open { display: flex; }
   .modal-box { background: white; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 380px; margin: 1rem; }
@@ -655,7 +666,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.1</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.2</div>
 </div>
 
 
@@ -675,8 +686,8 @@
         </div>
         <div class="admin-card-body">
           <table class="user-table">
-            <thead><tr><th>Usuário</th><th>Email</th><th>Perfil</th><th>Criado em</th></tr></thead>
-            <tbody id="usersTableBody"><tr><td colspan="4" style="text-align:center;color:#AAA;padding:20px">Carregando...</td></tr></tbody>
+            <thead><tr><th>Usuário</th><th>Email</th><th>Perfil</th><th>Criado em</th><th>Status</th><th></th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="6" style="text-align:center;color:#AAA;padding:20px">Carregando...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1244,21 +1255,20 @@ function lerLinkOrcamento() {
   })();
 
   // ── ADMIN: CARREGAR USUÁRIOS ──────────────────────────
+  var SKEY_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDIzODM3OSwiZXhwIjoyMDk5ODE0Mzc5fQ.OQWceVIRCkzBxCnaDxWCOyWWr9JFKAcTVBOzwZmMghU';
+  var _editUserId = null;
+
   function carregarUsuarios() {
     var tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#AAA;padding:20px">Carregando...</td></tr>';
-    var sess = JSON.parse(localStorage.getItem('printerCo_session')||'{}');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#AAA;padding:20px">Carregando...</td></tr>';
     fetch(SURL_AUTH + '/auth/v1/admin/users', {
-      headers: {
-        'apikey': SKEY_AUTH,
-        'Authorization': 'Bearer ' + (sess.access_token||SKEY_AUTH)
-      }
+      headers: { 'apikey': SKEY_SERVICE, 'Authorization': 'Bearer ' + SKEY_SERVICE }
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var users = data.users || [];
       if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#AAA;padding:20px">Nenhum usuário</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#AAA;padding:20px">Nenhum usuário</td></tr>';
         return;
       }
       tbody.innerHTML = '';
@@ -1266,21 +1276,87 @@ function lerLinkOrcamento() {
         var nome = (u.email||'').replace('@printer.interno','');
         var nomeFormatado = nome.charAt(0).toUpperCase() + nome.slice(1);
         var isAdmin = u.email === ADMIN_EMAIL;
-        var badge = isAdmin
-          ? '<span class="badge-admin">Admin</span>'
-          : '<span class="badge-user">Usuário</span>';
+        var isBanned = u.banned_until && new Date(u.banned_until) > new Date();
+        var badge = isAdmin ? '<span class="badge-admin">Admin</span>' : '<span class="badge-user">Usuário</span>';
+        var status = isBanned ? '<span class="badge-disabled">Inativo</span>' : '<span class="badge-active">Ativo</span>';
         var criado = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
+        var acoes = isAdmin ? '—' : '<div style="display:flex;gap:6px">'
+          + '<button class="btn-action edit" onclick="abrirEditSenha('' + u.id + '','' + nomeFormatado + '')">Senha</button>'
+          + (isBanned
+            ? '<button class="btn-action enable" onclick="toggleUsuario('' + u.id + '',false)">Ativar</button>'
+            : '<button class="btn-action disable" onclick="toggleUsuario('' + u.id + '',true)">Desativar</button>')
+          + '</div>';
         tbody.innerHTML += '<tr>'
           + '<td><strong>' + nomeFormatado + '</strong></td>'
           + '<td style="color:#888;font-size:12px">' + (u.email||'') + '</td>'
           + '<td>' + badge + '</td>'
           + '<td style="color:#AAA;font-size:12px">' + criado + '</td>'
+          + '<td>' + status + '</td>'
+          + '<td>' + acoes + '</td>'
           + '</tr>';
       });
     })
     .catch(function() {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#E24B4A;padding:20px">Erro ao carregar usuários</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#E24B4A;padding:20px">Erro ao carregar usuários</td></tr>';
     });
+  }
+
+  // ── ADMIN: EDITAR SENHA ────────────────────────────────
+  function abrirEditSenha(userId, nome) {
+    _editUserId = userId;
+    document.getElementById('editSenhaUser').textContent = 'Usuário: ' + nome;
+    document.getElementById('editSenhaInput').value = '';
+    document.getElementById('modalEditSenha').classList.add('open');
+    document.getElementById('editSenhaInput').focus();
+  }
+  function fecharModalEditSenha() {
+    document.getElementById('modalEditSenha').classList.remove('open');
+    _editUserId = null;
+  }
+  document.getElementById('modalEditSenha').addEventListener('click', function(e) {
+    if (e.target === this) { fecharModalEditSenha(); }
+  });
+  function salvarNovaSenha() {
+    var senha = document.getElementById('editSenhaInput').value;
+    var btn = document.getElementById('btnSalvarSenha');
+    if (!senha || senha.length < 6) { toast('Senha deve ter no mínimo 6 caracteres.'); return; }
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    fetch(SURL_AUTH + '/auth/v1/admin/users/' + _editUserId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'apikey': SKEY_SERVICE, 'Authorization': 'Bearer ' + SKEY_SERVICE },
+      body: JSON.stringify({ password: senha })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.id) {
+        fecharModalEditSenha();
+        toast('Senha alterada com sucesso!');
+      } else {
+        toast('Erro ao alterar senha.');
+      }
+      btn.disabled = false; btn.textContent = 'Salvar';
+    })
+    .catch(function() { toast('Erro ao alterar senha.'); btn.disabled = false; btn.textContent = 'Salvar'; });
+  }
+
+  // ── ADMIN: ATIVAR/DESATIVAR ────────────────────────────
+  function toggleUsuario(userId, desativar) {
+    var body = desativar
+      ? { ban_duration: '876000h' }
+      : { ban_duration: 'none' };
+    fetch(SURL_AUTH + '/auth/v1/admin/users/' + userId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'apikey': SKEY_SERVICE, 'Authorization': 'Bearer ' + SKEY_SERVICE },
+      body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.id) {
+        toast(desativar ? 'Usuário desativado.' : 'Usuário ativado!');
+        carregarUsuarios();
+      } else { toast('Erro ao atualizar usuário.'); }
+    })
+    .catch(function() { toast('Erro ao atualizar usuário.'); });
   }
 
   // ── ADMIN: NOVO USUÁRIO ───────────────────────────────
@@ -1349,6 +1425,10 @@ function lerLinkOrcamento() {
   window.fecharModalNovoUsuario = fecharModalNovoUsuario;
   window.criarUsuario = criarUsuario;
   window.logout = logout;
+  window.abrirEditSenha = abrirEditSenha;
+  window.fecharModalEditSenha = fecharModalEditSenha;
+  window.salvarNovaSenha = salvarNovaSenha;
+  window.toggleUsuario = toggleUsuario;
 })();
 </script>
 
