@@ -445,23 +445,110 @@
   }
 
   @media (max-width: 600px) {
-    .page { padding: 0 0 4rem; }
+    /* ── LAYOUT ── */
+    .page { padding: 0 0 5rem; }
+    .admin-wrap { padding: 1rem 1rem 5rem; }
+
+    /* ── MASTHEAD ── */
     .masthead { flex-direction: row; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 0; gap: 10px; }
-    .masthead-logo { height: 52px; }
+    .masthead-logo { height: 48px; }
     .masthead-right { text-align: right; }
-    .masthead-doc-label { font-size: 7.5px; letter-spacing: 0.16em; margin-bottom: 2px; }
-    .masthead-doc-title { font-size: 22px; margin-bottom: 6px; }
-    .meta-k { font-size: 8px; }
+    .masthead-doc-label { font-size: 7px; letter-spacing: 0.14em; margin-bottom: 2px; }
+    .masthead-doc-title { font-size: 22px; margin-bottom: 6px; text-shadow: none; }
+    .meta-k { font-size: 7.5px; }
     .meta-v { font-size: 10px; }
-    .client-row { grid-template-columns: 1fr !important; gap: 8px !important; }
+
+    /* ── FORMULÁRIO CLIENTE ── */
+    .client-row { grid-template-columns: 1fr !important; gap: 10px !important; }
     .cliente-wrap { grid-column: 1 / -1; }
-    .tbl-head { grid-template-columns: 1fr 44px 72px 28px; font-size: 8px; }
-    .item-row { grid-template-columns: 1fr 44px 72px 28px; }
-    .bottom-row { grid-template-columns: 1fr; gap: 14px; }
-    .actions-strip { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .btn-act { height: 48px; font-size: 13px; }
-    .cfg-grid { grid-template-columns: 1fr; }
-    .modal-box { margin: 1rem; }
+
+    /* ── TABELA DE ITENS — layout 2 linhas ── */
+    .tbl-head { display: none !important; }
+    .item-row {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: baseline !important;
+      gap: 0 6px !important;
+      padding: 12px 0 !important;
+      border-bottom: 1px solid #F0F0F0 !important;
+    }
+    /* Linha 1 esq: descrição */
+    .item-row > input:nth-child(1) {
+      flex: 1 1 calc(100% - 120px) !important;
+      min-width: 120px !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      order: 1 !important;
+      width: auto !important;
+      padding-bottom: 4px !important;
+    }
+    /* Linha 1 dir: total em destaque */
+    .item-row > .itv {
+      flex: 0 0 80px !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      text-align: right !important;
+      order: 2 !important;
+      align-self: center !important;
+      white-space: nowrap !important;
+      color: #111 !important;
+    }
+    .item-row > .itv.empty { color: #CCC !important; font-size: 12px !important; font-weight: 400 !important; }
+    /* Linha 1 dir: botão remover */
+    .item-row > .btn-remove {
+      flex: 0 0 26px !important;
+      order: 3 !important;
+      align-self: center !important;
+    }
+    /* Linha 2: qtd × unitário (pequeno, cinza) */
+    .item-row > input.c {
+      flex: 0 0 44px !important;
+      order: 4 !important;
+      font-size: 11px !important;
+      color: #999 !important;
+      margin-top: 0 !important;
+      width: 44px !important;
+      text-align: left !important;
+      border-bottom-color: transparent !important;
+    }
+    .item-row > input.r {
+      flex: 1 1 auto !important;
+      order: 5 !important;
+      font-size: 11px !important;
+      color: #999 !important;
+      margin-top: 0 !important;
+      width: auto !important;
+      border-bottom-color: transparent !important;
+    }
+    .item-row > input.c:focus,
+    .item-row > input.r:focus { border-bottom-color: #111 !important; }
+
+    /* ── SEÇÃO INFERIOR ── */
+    .bottom-row { grid-template-columns: 1fr !important; gap: 16px; }
+    .obs-textarea { min-height: 70px; }
+
+    /* ── BOTÕES AÇÃO ── */
+    .actions-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-act { height: 52px; font-size: 13.5px; border-radius: 10px; }
+
+    /* ── CONFIG ── */
+    .cfg-grid { grid-template-columns: 1fr !important; }
+
+    /* ── FINANCEIRO KPI ── */
+    #panelFinanceiro .admin-wrap > div:first-child {
+      grid-template-columns: 1fr !important;
+    }
+
+    /* ── TABELA USUÁRIOS: esconder colunas menos importantes ── */
+    .user-table th:nth-child(2),
+    .user-table td:nth-child(2),
+    .user-table th:nth-child(4),
+    .user-table td:nth-child(4) { display: none; }
+    .user-table td, .user-table th { padding: 8px 8px; font-size: 12px; }
+
+    /* ── MODAIS ── */
+    .modal-box { margin: 1rem; padding: 1.25rem; }
+    .modal-box .modal-btns { gap: 8px; }
   }
 </style>
 
@@ -699,7 +786,6 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v3.3</div>
 </div>
 
 
@@ -879,6 +965,22 @@
     <div class="modal-btns">
       <button class="btn-cancel" onclick="fecharAlterarSenha()">Cancelar</button>
       <button class="btn-save" id="btnConfirmarSenha" onclick="confirmarAlterarSenha()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR SENHA -->
+<div class="modal-edit-bg" id="modalEditSenha">
+  <div class="modal-box">
+    <div class="modal-title">Alterar senha</div>
+    <div style="font-size:13px;color:#888;margin-bottom:1rem" id="editSenhaUser"></div>
+    <div class="modal-field">
+      <label>Nova senha</label>
+      <input type="password" id="editSenhaInput" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModalEditSenha()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarSenha" onclick="salvarNovaSenha()">Salvar</button>
     </div>
   </div>
 </div>
