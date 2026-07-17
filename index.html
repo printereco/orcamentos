@@ -595,6 +595,12 @@
     </div>
   </div>
 
+  <!-- SOLICITANTE -->
+  <div class="ref-row no-print">
+    <div class="sec-label">Solicitante</div>
+    <input class="ref-input" type="text" id="solicitante" placeholder="Nome da pessoa que solicitou o orçamento">
+  </div>
+
   <!-- REFERÊNCIA -->
   <div class="ref-row no-print">
     <div class="sec-label">Referência</div>
@@ -684,7 +690,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v3.0</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v3.2</div>
 </div>
 
 
@@ -1046,10 +1052,13 @@
     var nl        = String.fromCharCode(10);
     var hora      = new Date().getHours();
     var saudacao  = hora >= 6 && hora < 12 ? 'Bom dia' : hora >= 12 && hora < 18 ? 'Boa tarde' : 'Boa noite';
-    var msg = saudacao + ', *' + cliente + '*!' + nl + nl;
+    var solicitante = document.getElementById('solicitante') ? document.getElementById('solicitante').value.trim() : '';
+    var msg = saudacao + ',' + nl + nl;
     msg += 'Segue o orçamento da *' + nome + '*';
     if (ref) { msg += ' referente a:' + nl + 'Ref.: *' + ref + '*' + nl; }
     else { msg += '.' + nl; }
+    if (cliente) { msg += 'Empresa: *' + cliente + '*' + nl; }
+    if (solicitante) { msg += 'Solicitante: *' + solicitante + '*' + nl; }
     msg += 'Válido até: ' + fmtDate(val) + nl;
     msg += nl + '*Itens:*' + nl + linhas;
     if (discReais > 0) {
@@ -1070,7 +1079,8 @@
         cliente: cliente, cnpj_cli: document.getElementById('cnpjCliente').value.trim(),
         referencia: ref, valido_ate: val||null, desconto: discVal, tipo_desc: tipo,
         itens: it2, obs: obs, empresa: cfg.nome||'', cnpj_emp: cfg.cnpj||'',
-        tel_emp: cfg.tel||'', email_emp: cfg.email||''
+        tel_emp: cfg.tel||'', email_emp: cfg.email||'',
+        solicitante: solicitante||null
       };
       var btnEl = document.getElementById('btnWpp');
       if (btnEl) { btnEl.textContent = 'Salvando...'; btnEl.disabled = true; }
@@ -1162,6 +1172,11 @@
     if (cnpjEmp) {
       doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(130,130,130);
       doc.text(cnpjEmp, colE, y+5, {align:'right'});
+    }
+    var solicitantePDF = document.getElementById('solicitante') ? document.getElementById('solicitante').value.trim() : '';
+    if (solicitantePDF) {
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(130,130,130);
+      doc.text('Solicitante: ' + solicitantePDF, colC, y+5);
     }
     y+=14; doc.setDrawColor(210,210,210); doc.setLineWidth(0.3); doc.line(ml,y,pw-mr,y); y+=8;
     doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
