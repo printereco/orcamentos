@@ -712,6 +712,11 @@
       };
       var btnEl = document.getElementById('btnWpp');
       if (btnEl) { btnEl.textContent = 'Salvando...'; btnEl.disabled = true; }
+      // Garantir null em campos opcionais para evitar rejeição do Supabase
+      if (!dadosOrc.valido_ate) dadosOrc.valido_ate = null;
+      if (!dadosOrc.cnpj_cli) dadosOrc.cnpj_cli = null;
+      if (!dadosOrc.referencia) dadosOrc.referencia = null;
+      if (!dadosOrc.obs) dadosOrc.obs = null;
       SupabaseService.salvar(dadosOrc)
         .then(function(id) {
           var linkOrc = 'https://printereco.github.io/orcamentos/ver.html?id=' + id;
@@ -722,7 +727,7 @@
         })
         .catch(function(e) {
           console.error('Erro Supabase:', e);
-          toast('Erro ao salvar orçamento. Verifique sua conexão.');
+          toast('Erro ao salvar: ' + e.message);
         })
         .finally(function() {
           if (btnEl) { btnEl.textContent = 'WhatsApp'; btnEl.disabled = false; }
