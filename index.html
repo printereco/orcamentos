@@ -684,7 +684,7 @@
   </div>
 
 
-  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v2.9</div>
+  <div style="text-align:center;padding:1.5rem 0 0;font-size:11px;color:#AAAAAA;letter-spacing:0.04em;line-height:1.8;">Desenvolvido por <strong style="color:#888;font-weight:600;">Alessandro Lima</strong><br>© 2026 · Todos os direitos reservados · v3.0</div>
 </div>
 
 
@@ -837,7 +837,6 @@
 <div class="update-banner" id="updateBanner">🔄 Nova versão disponível — toque para atualizar</div>
 
 <script>
-(function() {
 
   // ── VERIFICAÇÃO DE SESSÃO ──────────────────────────────
   (function() {
@@ -1244,12 +1243,15 @@
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.cliente-wrap')) { clienteDropdown.classList.remove('open'); }
   });
-  document.getElementById('btnAddCliente').addEventListener('click', function() {
-    document.getElementById('modalClienteNome').value = clienteInput.value;
-    document.getElementById('modalClienteCnpj').value = '';
-    document.getElementById('modalCliente').classList.add('open');
-    document.getElementById('modalClienteNome').focus();
-  });
+  var _btnAddCli = document.getElementById('btnAddCliente');
+  if (_btnAddCli) {
+    _btnAddCli.addEventListener('click', function() {
+      document.getElementById('modalClienteNome').value = clienteInput.value;
+      document.getElementById('modalClienteCnpj').value = '';
+      document.getElementById('modalCliente').classList.add('open');
+      document.getElementById('modalClienteNome').focus();
+    });
+  }
   document.getElementById('modalClienteCancel').addEventListener('click', function() {
     document.getElementById('modalCliente').classList.remove('open');
   });
@@ -1724,26 +1726,6 @@ function lerLinkOrcamento() {
     });
   }
 
-  // Expor funções globalmente
-  window.showPanel              = showPanel;
-  window.abrirModalNovoCliente  = abrirModalNovoCliente;
-  window.fecharModalCliente2    = fecharModalCliente2;
-  window.salvarCliente          = salvarCliente;
-  window.abrirModalNovoCliente  = abrirModalNovoCliente;
-  window.fecharModalCliente2    = fecharModalCliente2;
-  window.salvarCliente          = salvarCliente;
-  window.abrirAlterarSenha   = abrirAlterarSenha;
-  window.fecharAlterarSenha  = fecharAlterarSenha;
-  window.confirmarAlterarSenha = confirmarAlterarSenha;
-  window.logout               = logout;
-  window.abrirModalNovoUsuario  = abrirModalNovoUsuario;
-  window.fecharModalNovoUsuario = fecharModalNovoUsuario;
-  window.criarUsuario         = criarUsuario;
-  window.abrirEditSenha       = abrirEditSenha;
-  window.fecharModalEditSenha = fecharModalEditSenha;
-  window.salvarNovaSenha      = salvarNovaSenha;
-  window.toggleUsuario        = toggleUsuario;
-})();
 </script>
 
 <script>
