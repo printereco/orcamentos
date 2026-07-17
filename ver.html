@@ -97,7 +97,7 @@
 <script>
 (function() {
   var SUPABASE_URL = 'https://cxgpuwqihdojisishmzv.supabase.co';
-  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MDYxNjIsImV4cCI6MjA2ODk4MjE2Mn0.placeholder';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w';
 
   function fmt(v) {
     return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -124,7 +124,7 @@
 
   if (_orcId) {
     fetch('https://cxgpuwqihdojisishmzv.supabase.co/rest/v1/orcamentos?id=eq.' + _orcId + '&select=*', {
-      headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MDYxNjIsImV4cCI6MjA2ODk4MjE2Mn0.placeholder', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MDYxNjIsImV4cCI6MjA2ODk4MjE2Mn0.placeholder' }
+      headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w' }
     })
     .then(function(r) { return r.json(); })
     .then(function(rows) {
