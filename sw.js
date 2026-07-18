@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-v24';
+var CACHE = 'printer-orcamento-v25';
 var FILES = [
   './',
   './index.html',
@@ -9,9 +9,8 @@ var FILES = [
   './icon-512.png'
 ];
 
-// Instalar — salvar arquivos no cache
 self.addEventListener('install', function(e) {
-  self.skipWaiting(); // Ativar imediatamente sem esperar
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(function(cache) {
       return cache.addAll(FILES);
@@ -19,7 +18,6 @@ self.addEventListener('install', function(e) {
   );
 });
 
-// Ativar — limpar caches antigos
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
@@ -29,16 +27,20 @@ self.addEventListener('activate', function(e) {
       );
     })
   );
-  self.clients.claim(); // Assumir controle imediatamente
+  self.clients.claim();
 });
 
-// Fetch — network first para HTML, cache first para assets
 self.addEventListener('fetch', function(e) {
-  var url = e.request.url;
-  var isHTML = url.endsWith('.html') || url.endsWith('/');
+  // Ignorar requisições não-GET (POST, PATCH, DELETE)
+  if (e.request.method !== 'GET') return;
+
+  // Ignorar requisições ao Supabase
+  if (e.request.url.indexOf('supabase.co') !== -1) return;
+
+  var isHTML = e.request.url.endsWith('.html') || e.request.url.endsWith('/');
 
   if (isHTML) {
-    // HTML: tenta rede primeiro, fallback para cache
+    // HTML: rede primeiro, cache como fallback
     e.respondWith(
       fetch(e.request)
         .then(function(response) {
@@ -53,7 +55,7 @@ self.addEventListener('fetch', function(e) {
         })
     );
   } else {
-    // Assets: cache first
+    // Assets: cache primeiro
     e.respondWith(
       caches.match(e.request).then(function(cached) {
         return cached || fetch(e.request).then(function(response) {
@@ -68,7 +70,6 @@ self.addEventListener('fetch', function(e) {
   }
 });
 
-// Receber mensagem para pular espera
 self.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
