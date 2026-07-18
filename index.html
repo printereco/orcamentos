@@ -1406,8 +1406,8 @@
     getClientes(function(lista) { _dropCache = lista; mostrar(lista); });
   }
   
-  clienteInput.addEventListener('input', function() { renderDropdown(this.value); });
-  clienteInput.addEventListener('focus', function() { renderDropdown(this.value); });
+  clienteInput.addEventListener('input', function() { _dropCache = []; renderDropdown(this.value); });
+  clienteInput.addEventListener('focus', function() { _dropCache = []; renderDropdown(this.value); });
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.cliente-wrap')) { clienteDropdown.classList.remove('open'); }
   });
