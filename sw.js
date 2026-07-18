@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-v25';
+var CACHE = 'printer-orcamento-v26';
 var FILES = [
   './',
   './index.html',
