@@ -186,7 +186,7 @@ async function carregar() {
   let filtro = 'select=*';
   if (inicio) filtro += `&data=gte.${inicio}`;
   if (fim)    filtro += `&data=lte.${fim}`;
-  filtro += '&order=data.desc';
+  filtro += '&order=criado_em.desc';
 
   try {
     orcamentos = await supaGet('orcamentos', filtro);
