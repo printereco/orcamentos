@@ -214,20 +214,29 @@ async function carregar() {
     const configs = await resConfig.json();
     const cfg = configs[0] || {};
 
-    const itens = orc.itens || [];
-    const status= orc.status || 'pendente';
+    // Suporte a itens em formato antigo ({qty,desc,unit}) e novo ({qtd,desc,un,preco})
+    const itensRaw = orc.itens || [];
+    const status   = orc.status || 'pendente';
+
+    const itens = itensRaw.map(i => ({
+      desc:  i.desc  || i.description || '—',
+      qtd:   i.qtd   || i.qty  || 1,
+      un:    i.un    || i.unit || 'un',
+      preco: i.preco || i.price|| 0,
+      total: i.total || ((i.qty||i.qtd||1) * (i.price||i.preco||0))
+    }));
 
     const itensHtml = itens.map((i,idx) => `
       <tr style="${idx%2===0?'background:#FAFAFA':''}">
         <td>${i.desc}</td>
         <td>${i.qtd}</td>
-        <td>${i.un||'un'}</td>
+        <td>${i.un}</td>
         <td>${fmt(i.preco)}</td>
         <td><strong>${fmt(i.total)}</strong></td>
       </tr>
     `).join('');
 
-    const descontoVal = orc.desconto_real || 0;
+    const descontoVal = orc.desconto || orc.desconto_real || 0;
 
     document.getElementById('app').innerHTML = `
       <div class="orcamento-card">
@@ -250,10 +259,11 @@ async function carregar() {
           <span class="status-badge status-${status}">${status.toUpperCase()}</span>
 
           <div class="info-grid">
-            <div class="info-item"><label>Cliente</label><span>${orc.cliente_nome||'—'}</span></div>
+            <div class="info-item"><label>Cliente</label><span>${orc.cliente||orc.cliente_nome||'—'}</span></div>
+            ${orc.referencia ? `<div class="info-item"><label>Referência</label><span>${orc.referencia}</span></div>` : ''}
             ${orc.solicitante ? `<div class="info-item"><label>Solicitante</label><span>${orc.solicitante}</span></div>` : ''}
-            <div class="info-item"><label>Data</label><span>${fmtData(orc.data)}</span></div>
-            <div class="info-item"><label>Válido até</label><span>${fmtData(orc.validade)}</span></div>
+            <div class="info-item"><label>Data</label><span>${fmtData(orc.criado_em)}</span></div>
+            <div class="info-item"><label>Válido até</label><span>${fmtData(orc.valido_ate||orc.validade)}</span></div>
           </div>
 
           <table>
@@ -275,7 +285,7 @@ async function carregar() {
             <div class="totais-linha destaque"><span>Total</span><span>${fmt(orc.total)}</span></div>
           </div>
 
-          ${orc.observacoes ? `<div class="obs-box"><strong>Observações</strong>${orc.observacoes}</div>` : ''}
+          ${(orc.obs||orc.observacoes) ? `<div class="obs-box"><strong>Observações</strong>${orc.obs||orc.observacoes}</div>` : ''}
         </div>
 
         <div class="rodape">

@@ -13,12 +13,11 @@
   <style>
     /* Estilos específicos da página de Orçamentos */
     .orcamento-form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
       margin-bottom: 24px;
     }
-    @media(max-width:768px){ .orcamento-form { grid-template-columns:1fr; } }
 
     .itens-tabela { width:100%; border-collapse:collapse; margin-bottom:10px; }
     .itens-tabela th {
@@ -124,7 +123,7 @@
           <div>
             <div class="form-grupo autocomplete-box">
               <label>Cliente</label>
-              <input type="text" id="campo-cliente" placeholder="Digite o nome do cliente..." autocomplete="off" oninput="filtrarClientes(this.value)" />
+              <input type="text" id="campo-cliente" placeholder="Digite o nome do cliente..." autocomplete="off" oninput="filtrarClientes(this.value)" onfocus="mostrarTodosClientes()" />
               <div class="autocomplete-lista" id="lista-clientes"></div>
             </div>
             <input type="hidden" id="cliente-id" />
@@ -313,14 +312,25 @@ async function carregarClientes() {
   } catch { clientes = []; }
 }
 
+function mostrarTodosClientes() {
+  const lista = document.getElementById('lista-clientes');
+  if (!clientes.length) return;
+  lista.innerHTML = clientes.slice(0, 10).map(c => `
+    <div class="autocomplete-item" onclick="selecionarCliente('${c.id}','${c.nome.replace(/'/g,"\\'")}')">
+      ${c.nome}
+    </div>
+  `).join('');
+  lista.classList.add('aberta');
+}
+
 function filtrarClientes(busca) {
   const lista = document.getElementById('lista-clientes');
-  if (!busca || busca.length < 2) { lista.classList.remove('aberta'); return; }
+  if (busca.length === 0) { mostrarTodosClientes(); return; }
 
   const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()));
   if (!filtrados.length) { lista.classList.remove('aberta'); return; }
 
-  lista.innerHTML = filtrados.slice(0, 8).map(c => `
+  lista.innerHTML = filtrados.slice(0, 10).map(c => `
     <div class="autocomplete-item" onclick="selecionarCliente('${c.id}','${c.nome.replace(/'/g,"\\'")}')">
       ${c.nome}
     </div>
