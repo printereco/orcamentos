@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orçamentos — Printer & Co.</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="manifest" href="manifest.json">
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/menu.js"></script>
+  <style>
+    /* Estilos específicos da página de Orçamentos */
+    .orcamento-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    @media(max-width:768px){ .orcamento-form { grid-template-columns:1fr; } }
+
+    .itens-tabela { width:100%; border-collapse:collapse; margin-bottom:10px; }
+    .itens-tabela th {
+      background: #1A1A1A;
+      color:#fff;
+      padding:10px 10px;
+      font-size:0.78rem;
+      text-align:left;
+      text-transform:uppercase;
+    }
+    .itens-tabela td { padding:8px 10px; border-bottom:1px solid #eee; font-size:0.88rem; }
+    .itens-tabela input, .itens-tabela select {
+      width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px;
+      font-size:0.85rem; font-family:inherit; outline:none;
+    }
+    .itens-tabela input:focus, .itens-tabela select:focus { border-color:#E91E8C; }
+    .itens-tabela .btn-remover {
+      background:none; border:none; color:#C62828; cursor:pointer;
+      font-size:1rem; padding:4px 8px; border-radius:4px;
+    }
+    .itens-tabela .btn-remover:hover { background:#FFEBEE; }
+
+    .totais-box {
+      background:#1A1A1A;
+      border-radius:10px;
+      padding:16px 20px;
+      color:#fff;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .totais-linha { display:flex; justify-content:space-between; font-size:0.88rem; color:rgba(255,255,255,0.7); }
+    .totais-linha.destaque { font-size:1.1rem; font-weight:800; color:#fff; border-top:1px solid rgba(255,255,255,0.2); padding-top:8px; margin-top:4px; }
+    .totais-linha.destaque span:last-child { color:#E91E8C; }
+
+    .acoes-orcamento {
+      display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;
+    }
+
+    /* Lista de orçamentos */
+    .filtros-bar {
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;
+    }
+    .filtros-bar input, .filtros-bar select {
+      padding:8px 12px; border:1px solid #ddd; border-radius:8px;
+      font-size:0.88rem; font-family:inherit; outline:none;
+    }
+    .filtros-bar input:focus, .filtros-bar select:focus { border-color:#E91E8C; }
+
+    .status-btn {
+      display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px;
+      font-size:0.75rem; font-weight:700; text-transform:uppercase;
+      cursor:pointer; border:none; letter-spacing:0.3px;
+    }
+    .status-pendente  { background:#FFF8E1; color:#F57F17; }
+    .status-pago      { background:#E8F5E9; color:#2E7D32; }
+    .status-cancelado { background:#FFEBEE; color:#C62828; }
+
+    .autocomplete-box {
+      position:relative;
+    }
+    .autocomplete-lista {
+      position:absolute; top:100%; left:0; right:0;
+      background:#fff; border:1px solid #ddd; border-radius:8px;
+      box-shadow:0 4px 16px rgba(0,0,0,0.12); z-index:50;
+      max-height:200px; overflow-y:auto; display:none;
+    }
+    .autocomplete-lista.aberta { display:block; }
+    .autocomplete-item {
+      padding:9px 14px; font-size:0.88rem; cursor:pointer; transition:background 0.15s;
+    }
+    .autocomplete-item:hover { background:#FCE4F3; }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar"></div>
+<div id="sidebar-overlay"></div>
+
+<!-- Conteúdo -->
+<div id="conteudo">
+
+  <!-- Header -->
+  <div class="pagina-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="btn-menu-mobile">☰</button>
+      <h1>📋 Orçamentos</h1>
+    </div>
+    <button class="btn btn-primario" onclick="abrirFormNovo()">+ Novo Orçamento</button>
+  </div>
+
+  <!-- Corpo -->
+  <div class="pagina-corpo">
+
+    <!-- Painel: Formulário de orçamento -->
+    <div id="painel-form" style="display:none; margin-bottom:24px;">
+      <div class="card">
+        <div class="card-titulo" id="form-titulo">Novo Orçamento</div>
+
+        <div class="orcamento-form">
+          <!-- Coluna esquerda -->
+          <div>
+            <div class="form-grupo autocomplete-box">
+              <label>Cliente</label>
+              <input type="text" id="campo-cliente" placeholder="Digite o nome do cliente..." autocomplete="off" oninput="filtrarClientes(this.value)" />
+              <div class="autocomplete-lista" id="lista-clientes"></div>
+            </div>
+            <input type="hidden" id="cliente-id" />
+
+            <div class="form-grupo">
+              <label>Solicitante</label>
+              <input type="text" id="campo-solicitante" placeholder="Nome de quem solicitou" />
+            </div>
+
+            <div class="form-linha form-linha-2">
+              <div class="form-grupo">
+                <label>Data</label>
+                <input type="date" id="campo-data" />
+              </div>
+              <div class="form-grupo">
+                <label>Validade</label>
+                <input type="date" id="campo-validade" />
+              </div>
+            </div>
+
+            <div class="form-grupo">
+              <label>Observações</label>
+              <textarea id="campo-obs" rows="3" placeholder="Condições, prazo de entrega..."></textarea>
+            </div>
+          </div>
+
+          <!-- Coluna direita: Itens -->
+          <div>
+            <div class="form-grupo">
+              <label>Itens do Orçamento</label>
+              <div class="tabela-container" style="margin-bottom:8px;">
+                <table class="itens-tabela">
+                  <thead>
+                    <tr>
+                      <th style="width:40%">Descrição</th>
+                      <th style="width:10%">Qtd</th>
+                      <th style="width:10%">Un</th>
+                      <th style="width:18%">Preço Un.</th>
+                      <th style="width:16%">Total</th>
+                      <th style="width:6%"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="itens-tbody"></tbody>
+                </table>
+              </div>
+              <button class="btn btn-secundario btn-sm" onclick="adicionarItem()">+ Item</button>
+            </div>
+
+            <!-- Desconto -->
+            <div class="form-linha form-linha-2" style="margin-bottom:12px;">
+              <div class="form-grupo">
+                <label>Desconto</label>
+                <input type="number" id="campo-desconto" value="0" min="0" oninput="calcTotais()" />
+              </div>
+              <div class="form-grupo">
+                <label>Tipo</label>
+                <select id="tipo-desconto" onchange="calcTotais()">
+                  <option value="reais">R$</option>
+                  <option value="percent">%</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Totais -->
+            <div class="totais-box">
+              <div class="totais-linha"><span>Subtotal</span><span id="subtotal">R$ 0,00</span></div>
+              <div class="totais-linha"><span>Desconto</span><span id="desconto-exib">R$ 0,00</span></div>
+              <div class="totais-linha destaque"><span>Total</span><span id="total">R$ 0,00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="acoes-orcamento">
+          <button class="btn btn-primario" onclick="salvarOrcamento()">💾 Salvar</button>
+          <button class="btn btn-secundario" id="btn-whatsapp" onclick="enviarWhatsApp()" style="display:none">📱 WhatsApp</button>
+          <button class="btn btn-secundario" id="btn-pdf" onclick="gerarPDF()" style="display:none">📄 PDF</button>
+          <button class="btn btn-secundario" onclick="fecharForm()">✕ Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-bar">
+      <input type="text" id="filtro-busca" placeholder="🔍 Buscar..." oninput="filtrarLista()" style="flex:1;min-width:180px;" />
+      <select id="filtro-status" onchange="filtrarLista()">
+        <option value="">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="pago">Pago</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+
+    <!-- Tabela de orçamentos -->
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Solicitante</th>
+            <th>Data</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-orcamentos">
+          <tr><td colspan="7"><div class="carregando"><div class="spinner"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /pagina-corpo -->
+</div><!-- /conteudo -->
+
+<!-- Modal: Alterar Senha -->
+<div class="modal-overlay" id="modal-senha">
+  <div class="modal">
+    <div class="modal-cabecalho">
+      <h2>Alterar Senha</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-senha')">✕</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="form-grupo">
+        <label>Nova Senha</label>
+        <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="form-grupo">
+        <label>Confirmar Senha</label>
+        <input type="password" id="conf-senha" placeholder="Repita a senha" />
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-secundario" onclick="fecharModal('modal-senha')">Cancelar</button>
+      <button class="btn btn-primario" onclick="alterarSenha()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// =============================================
+// INIT
+// =============================================
+const sessao = verificarSessao();
+let orcamentos = [];
+let clientes   = [];
+let config     = {};
+let editandoId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  renderizarMenu('index.html');
+  await Promise.all([carregarConfig(), carregarClientes(), carregarOrcamentos()]);
+
+  // Data padrão = hoje
+  document.getElementById('campo-data').value = new Date().toISOString().split('T')[0];
+  // Validade padrão = +15 dias
+  const val = new Date(); val.setDate(val.getDate() + 15);
+  document.getElementById('campo-validade').value = val.toISOString().split('T')[0];
+
+  adicionarItem(); // começa com 1 item
+});
+
+// =============================================
+// CONFIG
+// =============================================
+async function carregarConfig() {
+  try {
+    const dados = await supaGet('config', 'select=*&limit=1');
+    config = dados[0] || {};
+  } catch {
+    config = {};
+  }
+}
+
+// =============================================
+// CLIENTES
+// =============================================
+async function carregarClientes() {
+  try {
+    clientes = await supaGet('clientes', 'select=id,nome,email,telefone&order=nome');
+  } catch { clientes = []; }
+}
+
+function filtrarClientes(busca) {
+  const lista = document.getElementById('lista-clientes');
+  if (!busca || busca.length < 2) { lista.classList.remove('aberta'); return; }
+
+  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()));
+  if (!filtrados.length) { lista.classList.remove('aberta'); return; }
+
+  lista.innerHTML = filtrados.slice(0, 8).map(c => `
+    <div class="autocomplete-item" onclick="selecionarCliente('${c.id}','${c.nome.replace(/'/g,"\\'")}')">
+      ${c.nome}
+    </div>
+  `).join('');
+  lista.classList.add('aberta');
+}
+
+function selecionarCliente(id, nome) {
+  document.getElementById('campo-cliente').value = nome;
+  document.getElementById('cliente-id').value = id;
+  document.getElementById('lista-clientes').classList.remove('aberta');
+}
+
+// Fecha autocomplete ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-box')) {
+    document.querySelectorAll('.autocomplete-lista').forEach(l => l.classList.remove('aberta'));
+  }
+});
+
+// =============================================
+// ITENS
+// =============================================
+let itemCounter = 0;
+
+function adicionarItem(desc = '', qtd = 1, un = 'un', preco = 0) {
+  itemCounter++;
+  const id = `item_${itemCounter}`;
+  const tr = document.createElement('tr');
+  tr.id = id;
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Descrição" value="${desc}" oninput="calcTotais()" /></td>
+    <td><input type="number" value="${qtd}" min="1" style="width:60px" oninput="calcTotais()" /></td>
+    <td>
+      <select onchange="calcTotais()">
+        ${['un','m²','m','kg','cx','pç','par'].map(u => `<option${u===un?' selected':''}>${u}</option>`).join('')}
+      </select>
+    </td>
+    <td><input type="number" value="${preco}" min="0" step="0.01" oninput="calcTotais()" /></td>
+    <td class="total-item">R$ 0,00</td>
+    <td><button class="btn-remover" onclick="removerItem('${id}')">✕</button></td>
+  `;
+  document.getElementById('itens-tbody').appendChild(tr);
+  calcTotais();
+}
+
+function removerItem(id) {
+  const el = document.getElementById(id);
+  if (el) { el.remove(); calcTotais(); }
+}
+
+function calcTotais() {
+  let subtotal = 0;
+  document.querySelectorAll('#itens-tbody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input[type=number]');
+    if (inputs.length < 2) return;
+    const qtd   = parseFloat(inputs[0].value) || 0;
+    const preco = parseFloat(inputs[1].value) || 0;
+    const tot   = qtd * preco;
+    subtotal += tot;
+    const tdTotal = tr.querySelector('.total-item');
+    if (tdTotal) tdTotal.textContent = formatarMoeda(tot);
+  });
+
+  const descValor = parseFloat(document.getElementById('campo-desconto').value) || 0;
+  const tipoDesc  = document.getElementById('tipo-desconto').value;
+  const desconto  = tipoDesc === 'percent' ? subtotal * (descValor / 100) : descValor;
+  const total     = Math.max(0, subtotal - desconto);
+
+  document.getElementById('subtotal').textContent     = formatarMoeda(subtotal);
+  document.getElementById('desconto-exib').textContent = formatarMoeda(desconto);
+  document.getElementById('total').textContent        = formatarMoeda(total);
+}
+
+function coletarItens() {
+  const itens = [];
+  document.querySelectorAll('#itens-tbody tr').forEach(tr => {
+    const inputs  = tr.querySelectorAll('input');
+    const select  = tr.querySelector('select');
+    const desc    = inputs[0]?.value?.trim();
+    if (!desc) return;
+    const qtd     = parseFloat(inputs[1]?.value) || 0;
+    const un      = select?.value || 'un';
+    const preco   = parseFloat(inputs[2]?.value) || 0;
+    itens.push({ desc, qtd, un, preco, total: qtd * preco });
+  });
+  return itens;
+}
+
+// =============================================
+// FORMULÁRIO
+// =============================================
+function abrirFormNovo() {
+  editandoId = null;
+  document.getElementById('form-titulo').textContent = 'Novo Orçamento';
+  document.getElementById('campo-cliente').value   = '';
+  document.getElementById('cliente-id').value      = '';
+  document.getElementById('campo-solicitante').value= '';
+  document.getElementById('campo-obs').value        = '';
+  document.getElementById('campo-desconto').value  = '0';
+  document.getElementById('tipo-desconto').value   = 'reais';
+  document.getElementById('itens-tbody').innerHTML  = '';
+  itemCounter = 0;
+
+  document.getElementById('campo-data').value = new Date().toISOString().split('T')[0];
+  const val = new Date(); val.setDate(val.getDate() + 15);
+  document.getElementById('campo-validade').value = val.toISOString().split('T')[0];
+
+  document.getElementById('btn-whatsapp').style.display = 'none';
+  document.getElementById('btn-pdf').style.display      = 'none';
+
+  adicionarItem();
+  document.getElementById('painel-form').style.display = 'block';
+  document.getElementById('painel-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function fecharForm() {
+  document.getElementById('painel-form').style.display = 'none';
+  editandoId = null;
+}
+
+function editarOrcamento(id) {
+  const orc = orcamentos.find(o => o.id === id);
+  if (!orc) return;
+  editandoId = id;
+  document.getElementById('form-titulo').textContent = `Editando Orçamento #${id}`;
+  document.getElementById('campo-cliente').value    = orc.cliente_nome || '';
+  document.getElementById('cliente-id').value       = orc.cliente_id  || '';
+  document.getElementById('campo-solicitante').value= orc.solicitante  || '';
+  document.getElementById('campo-data').value       = orc.data         || '';
+  document.getElementById('campo-validade').value   = orc.validade      || '';
+  document.getElementById('campo-obs').value        = orc.observacoes  || '';
+  document.getElementById('campo-desconto').value   = orc.desconto_valor || 0;
+  document.getElementById('tipo-desconto').value    = orc.desconto_tipo  || 'reais';
+
+  document.getElementById('itens-tbody').innerHTML = '';
+  itemCounter = 0;
+  (orc.itens || []).forEach(i => adicionarItem(i.desc, i.qtd, i.un, i.preco));
+
+  document.getElementById('btn-whatsapp').style.display = '';
+  document.getElementById('btn-pdf').style.display      = '';
+
+  document.getElementById('painel-form').style.display = 'block';
+  document.getElementById('painel-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// =============================================
+// SALVAR
+// =============================================
+async function salvarOrcamento() {
+  const clienteNome = document.getElementById('campo-cliente').value.trim();
+  const clienteId   = document.getElementById('cliente-id').value;
+
+  if (!clienteNome) { toast('Informe o cliente.', 'erro'); return; }
+
+  const itens = coletarItens();
+  if (!itens.length) { toast('Adicione ao menos um item.', 'erro'); return; }
+
+  const subtotal    = itens.reduce((s, i) => s + i.total, 0);
+  const descValor   = parseFloat(document.getElementById('campo-desconto').value) || 0;
+  const tipoDesc    = document.getElementById('tipo-desconto').value;
+  const descontoVal = tipoDesc === 'percent' ? subtotal * (descValor / 100) : descValor;
+  const total       = Math.max(0, subtotal - descontoVal);
+
+  const dados = {
+    cliente_nome:    clienteNome,
+    cliente_id:      clienteId || null,
+    solicitante:     document.getElementById('campo-solicitante').value.trim(),
+    data:            document.getElementById('campo-data').value,
+    validade:        document.getElementById('campo-validade').value,
+    observacoes:     document.getElementById('campo-obs').value.trim(),
+    itens:           itens,
+    subtotal,
+    desconto_valor:  descValor,
+    desconto_tipo:   tipoDesc,
+    desconto_real:   descontoVal,
+    total,
+    status:          'pendente',
+    usuario:         sessao.usuario,
+    criado_em:       new Date().toISOString()
+  };
+
+  try {
+    if (editandoId) {
+      await supaPatch('orcamentos', `id=eq.${editandoId}`, dados);
+      toast('Orçamento atualizado!', 'sucesso');
+    } else {
+      const [novo] = await supaPost('orcamentos', dados);
+      editandoId = novo.id;
+      toast('Orçamento salvo!', 'sucesso');
+    }
+
+    document.getElementById('btn-whatsapp').style.display = '';
+    document.getElementById('btn-pdf').style.display      = '';
+    await carregarOrcamentos();
+
+  } catch (e) {
+    toast('Erro ao salvar: ' + e.message, 'erro');
+  }
+}
+
+// =============================================
+// CARREGAR LISTA
+// =============================================
+async function carregarOrcamentos() {
+  try {
+    orcamentos = await supaGet('orcamentos', 'select=*&order=criado_em.desc');
+    renderizarLista(orcamentos);
+  } catch (e) {
+    document.getElementById('lista-orcamentos').innerHTML =
+      `<tr><td colspan="7" style="color:#C62828;padding:20px">Erro ao carregar orçamentos.</td></tr>`;
+  }
+}
+
+function filtrarLista() {
+  const busca  = document.getElementById('filtro-busca').value.toLowerCase();
+  const status = document.getElementById('filtro-status').value;
+  const filtrados = orcamentos.filter(o => {
+    const matchBusca  = !busca  || (o.cliente_nome||'').toLowerCase().includes(busca) || String(o.id).includes(busca);
+    const matchStatus = !status || o.status === status;
+    return matchBusca && matchStatus;
+  });
+  renderizarLista(filtrados);
+}
+
+function renderizarLista(lista) {
+  const tbody = document.getElementById('lista-orcamentos');
+  if (!lista.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="estado-vazio"><div class="icone-vazio">📭</div><p>Nenhum orçamento encontrado.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(o => `
+    <tr>
+      <td><strong>#${o.id}</strong></td>
+      <td>${o.cliente_nome || '—'}</td>
+      <td>${o.solicitante  || '—'}</td>
+      <td>${formatarData(o.data)}</td>
+      <td><strong>${formatarMoeda(o.total)}</strong></td>
+      <td>
+        <button class="status-btn status-${o.status||'pendente'}" onclick="ciclarStatus(${o.id},'${o.status||'pendente'}')">
+          ${(o.status||'pendente').toUpperCase()}
+        </button>
+      </td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-secundario btn-sm" onclick="editarOrcamento(${o.id})">✏️ Editar</button>
+        <button class="btn btn-secundario btn-sm" onclick="copiarLink(${o.id})">🔗 Link</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// =============================================
+// STATUS
+// =============================================
+const STATUS_CICLO = { pendente: 'pago', pago: 'cancelado', cancelado: 'pendente' };
+
+async function ciclarStatus(id, atual) {
+  const novo = STATUS_CICLO[atual] || 'pendente';
+  try {
+    await supaPatch('orcamentos', `id=eq.${id}`, { status: novo });
+    const orc = orcamentos.find(o => o.id === id);
+    if (orc) orc.status = novo;
+    filtrarLista();
+    toast(`Status alterado para ${novo}.`, 'sucesso');
+  } catch { toast('Erro ao alterar status.', 'erro'); }
+}
+
+// =============================================
+// WHATSAPP
+// =============================================
+async function enviarWhatsApp() {
+  if (!editandoId) { toast('Salve o orçamento primeiro.', 'aviso'); return; }
+
+  const orc  = orcamentos.find(o => o.id === editandoId);
+  const nome = document.getElementById('campo-cliente').value.trim();
+  const link = `${window.location.origin}${window.location.pathname.replace('index.html','ver.html')}?id=${editandoId}`;
+
+  const itensTexto = coletarItens().map(i =>
+    `▪ ${i.desc} — ${i.qtd} ${i.un} × ${formatarMoeda(i.preco)} = ${formatarMoeda(i.total)}`
+  ).join('\n');
+
+  const msg = `${saudacao()}, ${nome}! 👋\n\n` +
+    `Segue o orçamento da *Printer & Co.*:\n\n` +
+    `${itensTexto}\n\n` +
+    `*Total: ${document.getElementById('total').textContent}*\n\n` +
+    `📎 Ver orçamento completo:\n${link}`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// =============================================
+// LINK
+// =============================================
+function copiarLink(id) {
+  const link = `${window.location.origin}${window.location.pathname.replace('index.html','ver.html')}?id=${id}`;
+  navigator.clipboard.writeText(link).then(() => toast('Link copiado!', 'sucesso'));
+}
+
+// =============================================
+// PDF
+// =============================================
+async function gerarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const nome    = document.getElementById('campo-cliente').value.trim();
+  const solic   = document.getElementById('campo-solicitante').value.trim();
+  const data    = formatarData(document.getElementById('campo-data').value);
+  const validade= formatarData(document.getElementById('campo-validade').value);
+  const obs     = document.getElementById('campo-obs').value.trim();
+  const itens   = coletarItens();
+  const total   = document.getElementById('total').textContent;
+  const empresa = config.nome || 'Printer & Co.';
+
+  // Cabeçalho
+  doc.setFillColor(26, 26, 26);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14); doc.setFont(undefined, 'bold');
+  doc.text(empresa, 14, 12);
+  doc.setFontSize(8); doc.setFont(undefined, 'normal');
+  doc.text('Sistema de Gestão Comercial', 14, 18);
+  doc.setTextColor(233, 30, 140);
+  doc.text('ORÇAMENTO', 196, 12, { align: 'right' });
+  doc.setTextColor(255,255,255);
+  doc.text(`#${editandoId || '—'}`, 196, 18, { align: 'right' });
+
+  // Info
+  doc.setTextColor(0,0,0); doc.setFontSize(10);
+  let y = 38;
+  doc.setFont(undefined, 'bold'); doc.text('Cliente:', 14, y);
+  doc.setFont(undefined, 'normal'); doc.text(nome, 40, y);
+  if (solic) {
+    doc.setFont(undefined, 'bold'); doc.text('Solicitante:', 110, y);
+    doc.setFont(undefined, 'normal'); doc.text(solic, 140, y);
+  }
+  y += 7;
+  doc.setFont(undefined, 'bold'); doc.text('Data:', 14, y);
+  doc.setFont(undefined, 'normal'); doc.text(data, 40, y);
+  doc.setFont(undefined, 'bold'); doc.text('Validade:', 110, y);
+  doc.setFont(undefined, 'normal'); doc.text(validade, 140, y);
+
+  // Linha separadora
+  y += 10;
+  doc.setDrawColor(230,230,230); doc.line(14, y, 196, y);
+  y += 8;
+
+  // Cabeçalho tabela
+  doc.setFillColor(26,26,26);
+  doc.rect(14, y, 182, 8, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
+  doc.text('DESCRIÇÃO', 16, y+5.5);
+  doc.text('QTD', 110, y+5.5);
+  doc.text('UN', 125, y+5.5);
+  doc.text('PREÇO UN.', 142, y+5.5);
+  doc.text('TOTAL', 178, y+5.5, { align:'right' });
+  y += 12;
+
+  doc.setTextColor(0,0,0); doc.setFont(undefined,'normal');
+  itens.forEach((item, idx) => {
+    if (idx % 2 === 0) { doc.setFillColor(249,249,249); doc.rect(14,y-4,182,8,'F'); }
+    doc.text(item.desc.substring(0,45), 16, y);
+    doc.text(String(item.qtd), 110, y);
+    doc.text(item.un, 125, y);
+    doc.text(formatarMoeda(item.preco), 142, y);
+    doc.text(formatarMoeda(item.total), 178, y, { align:'right' });
+    y += 8;
+    if (y > 260) { doc.addPage(); y = 20; }
+  });
+
+  // Total
+  y += 4;
+  doc.setFillColor(26,26,26); doc.rect(130,y,66,10,'F');
+  doc.setTextColor(233,30,140); doc.setFont(undefined,'bold'); doc.setFontSize(11);
+  doc.text('TOTAL:', 133, y+7);
+  doc.setTextColor(255,255,255);
+  doc.text(total, 194, y+7, { align:'right' });
+
+  // Obs
+  if (obs) {
+    y += 18;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('Observações:', 14, y);
+    doc.setFont(undefined,'normal');
+    const linhas = doc.splitTextToSize(obs, 180);
+    doc.text(linhas, 14, y+5);
+  }
+
+  // Rodapé
+  doc.setFontSize(7); doc.setTextColor(150,150,150);
+  doc.text(`${empresa} — Gerado em ${new Date().toLocaleString('pt-BR')}`, 14, 290);
+
+  doc.save(`orcamento-${editandoId || 'novo'}-${nome.replace(/\s+/g,'_')}.pdf`);
+  toast('PDF gerado!', 'sucesso');
+}
+
+// =============================================
+// ALTERAR SENHA
+// =============================================
+async function alterarSenha() {
+  const nova  = document.getElementById('nova-senha').value;
+  const conf  = document.getElementById('conf-senha').value;
+  if (nova.length < 6) { toast('Mínimo 6 caracteres.', 'erro'); return; }
+  if (nova !== conf)   { toast('Senhas não conferem.', 'erro'); return; }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: headersAuth(),
+      body: JSON.stringify({ password: nova })
+    });
+    if (!res.ok) throw new Error();
+    toast('Senha alterada!', 'sucesso');
+    fecharModal('modal-senha');
+  } catch { toast('Erro ao alterar senha.', 'erro'); }
+}
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

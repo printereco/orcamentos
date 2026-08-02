@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Printer & Co.</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1A1A1A;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .login-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #1A1A1A;
+      letter-spacing: -0.5px;
+    }
+    .logo h1 span { color: #E91E8C; }
+    .logo p {
+      font-size: 0.82rem;
+      color: #888;
+      margin-top: 4px;
+    }
+    .form-grupo {
+      margin-bottom: 16px;
+    }
+    .form-grupo label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-wrapper:focus-within {
+      border-color: #E91E8C;
+      box-shadow: 0 0 0 3px rgba(233,30,140,0.10);
+    }
+    .input-wrapper input {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      outline: none;
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: #1A1A1A;
+    }
+    .input-sufixo {
+      padding: 10px 12px;
+      background: #F5F5F5;
+      color: #888;
+      font-size: 0.78rem;
+      border-left: 1px solid #E0E0E0;
+      white-space: nowrap;
+    }
+    .btn-entrar {
+      width: 100%;
+      padding: 12px;
+      background: #E91E8C;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .btn-entrar:hover { background: #C4187A; }
+    .btn-entrar:disabled { opacity: 0.6; cursor: not-allowed; }
+    .erro {
+      background: #FFEBEE;
+      color: #C62828;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      margin-top: 14px;
+      display: none;
+    }
+    .erro.visivel { display: block; }
+    .versao {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #bbb;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="logo">
+      <h1>Printer <span>&</span> Co.</h1>
+      <p>Sistema de Gestão Comercial</p>
+    </div>
+
+    <div class="form-grupo">
+      <label>Usuário</label>
+      <div class="input-wrapper">
+        <input type="text" id="usuario" placeholder="seu nome" autocomplete="username" />
+        <span class="input-sufixo">@printer.interno</span>
+      </div>
+    </div>
+
+    <div class="form-grupo">
+      <label>Senha</label>
+      <div class="input-wrapper">
+        <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+    </div>
+
+    <button class="btn-entrar" id="btn-entrar" onclick="entrar()">Entrar</button>
+
+    <div class="erro" id="erro-login"></div>
+
+    <div class="versao">Printer & Co. v4.0</div>
+  </div>
+
+  <script>
+    const SUPABASE_URL   = 'https://cxgpuwqihdojisishmzv.supabase.co';
+    const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w';
+    const DOMINIO        = '@printer.interno';
+    const SESSAO_KEY     = 'printerCo_session';
+    const DURACAO_SESSAO = 60 * 60 * 1000;
+
+    // Se já logado, vai direto pro app
+    const rawSessao = localStorage.getItem(SESSAO_KEY);
+    if (rawSessao) {
+      try {
+        const s = JSON.parse(rawSessao);
+        if (Date.now() < s.expira) window.location.href = 'index.html';
+      } catch { localStorage.removeItem(SESSAO_KEY); }
+    }
+
+    document.getElementById('usuario').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('senha').focus();
+    });
+    document.getElementById('senha').addEventListener('keydown', e => {
+      if (e.key === 'Enter') entrar();
+    });
+
+    async function entrar() {
+      const usuario = document.getElementById('usuario').value.trim();
+      const senha   = document.getElementById('senha').value;
+      const btn     = document.getElementById('btn-entrar');
+      const erro    = document.getElementById('erro-login');
+
+      erro.classList.remove('visivel');
+
+      if (!usuario || !senha) {
+        erro.textContent = 'Preencha usuário e senha.';
+        erro.classList.add('visivel');
+        return;
+      }
+
+      const email = usuario.includes('@') ? usuario : usuario + DOMINIO;
+      btn.disabled = true;
+      btn.textContent = 'Entrando...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON },
+          body: JSON.stringify({ email, password: senha })
+        });
+
+        const dados = await res.json();
+
+        if (!res.ok || !dados.access_token) {
+          throw new Error('Usuário ou senha inválidos.');
+        }
+
+        const sessao = {
+          token:  dados.access_token,
+          usuario: dados.user.email,
+          nome:   dados.user.user_metadata?.nome || usuario,
+          perfil: dados.user.user_metadata?.perfil || 'usuario',
+          expira: Date.now() + DURACAO_SESSAO
+        };
+
+        localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
+        window.location.href = 'index.html';
+
+      } catch (e) {
+        erro.textContent = e.message || 'Erro ao conectar. Tente novamente.';
+        erro.classList.add('visivel');
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
+    }
+  </script>
+</body>
+</html>

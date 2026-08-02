@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orçamento — Printer & Co.</title>
+  <script src="js/config.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #F5F5F5;
+      color: #1A1A1A;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .orcamento-card {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+    .cabecalho {
+      background: #1A1A1A;
+      padding: 24px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .empresa-nome {
+      color: #fff;
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+    .empresa-info {
+      color: rgba(255,255,255,0.55);
+      font-size: 0.78rem;
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+    .orcamento-num {
+      text-align: right;
+    }
+    .orcamento-num .label {
+      color: #E91E8C;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .orcamento-num .num {
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .corpo { padding: 28px; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+    .info-item label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #999;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .info-item span {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #1A1A1A;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 0.88rem;
+    }
+    thead th {
+      background: #1A1A1A;
+      color: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    tbody tr { border-bottom: 1px solid #F5F5F5; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: 10px 12px; color: #333; }
+    .totais {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .totais-linha {
+      display: flex;
+      gap: 24px;
+      font-size: 0.88rem;
+      color: #666;
+    }
+    .totais-linha span:last-child { font-weight: 600; color: #1A1A1A; min-width: 100px; text-align: right; }
+    .totais-linha.destaque {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #1A1A1A;
+      padding-top: 8px;
+      border-top: 2px solid #1A1A1A;
+    }
+    .totais-linha.destaque span:last-child { color: #E91E8C; }
+    .obs-box {
+      background: #F9F9F9;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .obs-box strong { display: block; margin-bottom: 4px; color: #1A1A1A; }
+    .rodape {
+      background: #F9F9F9;
+      padding: 16px 28px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #999;
+      border-top: 1px solid #F0F0F0;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .status-pendente  { background:#FFF8E1; color:#F57F17; }
+    .status-pago      { background:#E8F5E9; color:#2E7D32; }
+    .status-cancelado { background:#FFEBEE; color:#C62828; }
+    .erro-box {
+      max-width: 400px;
+      margin: 80px auto;
+      text-align: center;
+      color: #C62828;
+    }
+    .spinner {
+      width:36px;height:36px;border:3px solid #eee;border-top-color:#E91E8C;
+      border-radius:50%;animation:girar 0.8s linear infinite;margin:60px auto;
+    }
+    @keyframes girar { to { transform:rotate(360deg); } }
+    @media(max-width:600px){
+      .cabecalho { flex-direction:column; gap:12px; }
+      .info-grid { grid-template-columns:1fr; }
+      .corpo { padding:20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div class="spinner"></div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://cxgpuwqihdojisishmzv.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z3B1d3FpaGRvamlzaXNobXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgzNzksImV4cCI6MjA5OTgxNDM3OX0.nAjSIB4fMbC99JEtfkaDLd8LHbnwmx5QNxUPty88C2w';
+
+function fmt(v) {
+  return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+}
+function fmtData(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return isNaN(dt) ? d : dt.toLocaleDateString('pt-BR');
+}
+
+async function carregar() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+
+  if (!id) {
+    document.getElementById('app').innerHTML = `
+      <div class="erro-box"><div style="font-size:3rem">❌</div><p>Link inválido.</p></div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/orcamentos?id=eq.${id}&select=*`, {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
+    });
+    const dados = await res.json();
+    const orc   = dados[0];
+
+    if (!orc) {
+      document.getElementById('app').innerHTML = `
+        <div class="erro-box"><div style="font-size:3rem">🔍</div><p>Orçamento não encontrado.</p></div>`;
+      return;
+    }
+
+    // Carregar config da empresa
+    const resConfig = await fetch(`${SUPABASE_URL}/rest/v1/config?select=*&limit=1`, {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
+    });
+    const configs = await resConfig.json();
+    const cfg = configs[0] || {};
+
+    const itens = orc.itens || [];
+    const status= orc.status || 'pendente';
+
+    const itensHtml = itens.map((i,idx) => `
+      <tr style="${idx%2===0?'background:#FAFAFA':''}">
+        <td>${i.desc}</td>
+        <td>${i.qtd}</td>
+        <td>${i.un||'un'}</td>
+        <td>${fmt(i.preco)}</td>
+        <td><strong>${fmt(i.total)}</strong></td>
+      </tr>
+    `).join('');
+
+    const descontoVal = orc.desconto_real || 0;
+
+    document.getElementById('app').innerHTML = `
+      <div class="orcamento-card">
+        <div class="cabecalho">
+          <div>
+            <div class="empresa-nome">${cfg.nome || 'Printer & Co.'}</div>
+            <div class="empresa-info">
+              ${cfg.cnpj ? 'CNPJ: ' + cfg.cnpj + '<br>' : ''}
+              ${cfg.telefone ? cfg.telefone + '<br>' : ''}
+              ${cfg.email || ''}
+            </div>
+          </div>
+          <div class="orcamento-num">
+            <div class="label">Orçamento</div>
+            <div class="num">#${orc.id}</div>
+          </div>
+        </div>
+
+        <div class="corpo">
+          <span class="status-badge status-${status}">${status.toUpperCase()}</span>
+
+          <div class="info-grid">
+            <div class="info-item"><label>Cliente</label><span>${orc.cliente_nome||'—'}</span></div>
+            ${orc.solicitante ? `<div class="info-item"><label>Solicitante</label><span>${orc.solicitante}</span></div>` : ''}
+            <div class="info-item"><label>Data</label><span>${fmtData(orc.data)}</span></div>
+            <div class="info-item"><label>Válido até</label><span>${fmtData(orc.validade)}</span></div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Qtd</th>
+                <th>Un</th>
+                <th>Preço Un.</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>${itensHtml}</tbody>
+          </table>
+
+          <div class="totais">
+            <div class="totais-linha"><span>Subtotal</span><span>${fmt(orc.subtotal)}</span></div>
+            ${descontoVal > 0 ? `<div class="totais-linha"><span>Desconto</span><span>− ${fmt(descontoVal)}</span></div>` : ''}
+            <div class="totais-linha destaque"><span>Total</span><span>${fmt(orc.total)}</span></div>
+          </div>
+
+          ${orc.observacoes ? `<div class="obs-box"><strong>Observações</strong>${orc.observacoes}</div>` : ''}
+        </div>
+
+        <div class="rodape">
+          ${cfg.nome || 'Printer & Co.'} — ${cfg.endereco || ''}<br>
+          Este documento foi gerado automaticamente pelo sistema Printer & Co.
+        </div>
+      </div>
+    `;
+
+    document.title = `Orçamento #${orc.id} — ${orc.cliente_nome || 'Printer & Co.'}`;
+
+  } catch(e) {
+    document.getElementById('app').innerHTML = `
+      <div class="erro-box"><div style="font-size:3rem">⚠️</div><p>Erro ao carregar orçamento.</p></div>`;
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>

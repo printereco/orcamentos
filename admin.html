@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuários — Printer & Co.</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/menu.js"></script>
+</head>
+<body>
+
+<div id="sidebar"></div>
+<div id="sidebar-overlay"></div>
+
+<div id="conteudo">
+  <div class="pagina-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="btn-menu-mobile">☰</button>
+      <h1>⚙️ Usuários</h1>
+    </div>
+    <button class="btn btn-primario" onclick="abrirModalNovo()">+ Novo Usuário</button>
+  </div>
+
+  <div class="pagina-corpo">
+
+    <!-- Aviso de segurança info -->
+    <div style="background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:0.85rem;color:#2E7D32;">
+      🔒 As operações de usuários são realizadas com segurança via Edge Function — a chave de serviço nunca fica exposta no navegador.
+    </div>
+
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Email</th>
+            <th>Perfil</th>
+            <th>Criado em</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-usuarios">
+          <tr><td colspan="6"><div class="carregando"><div class="spinner"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Novo Usuário -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-cabecalho">
+      <h2>Novo Usuário</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-usuario')">✕</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="form-grupo">
+        <label>Nome de Login *</label>
+        <div style="display:flex;align-items:center;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+          <input type="text" id="novo-login" placeholder="nome" style="flex:1;padding:9px 12px;border:none;outline:none;font-size:0.92rem;" />
+          <span style="padding:9px 12px;background:#F5F5F5;color:#888;font-size:0.78rem;border-left:1px solid #ddd;">@printer.interno</span>
+        </div>
+      </div>
+      <div class="form-grupo">
+        <label>Nome de exibição</label>
+        <input type="text" id="novo-nome" placeholder="Nome completo" />
+      </div>
+      <div class="form-linha form-linha-2">
+        <div class="form-grupo">
+          <label>Senha *</label>
+          <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" />
+        </div>
+        <div class="form-grupo">
+          <label>Perfil</label>
+          <select id="novo-perfil">
+            <option value="usuario">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-secundario" onclick="fecharModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primario" onclick="criarUsuario()">✅ Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Alterar Senha -->
+<div class="modal-overlay" id="modal-senha">
+  <div class="modal">
+    <div class="modal-cabecalho">
+      <h2>Alterar Senha</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-senha')">✕</button>
+    </div>
+    <div class="modal-corpo">
+      <p style="margin-bottom:14px;font-size:0.88rem;color:#555;">Alterando senha de: <strong id="usuario-senha-nome"></strong></p>
+      <div class="form-grupo">
+        <label>Nova Senha</label>
+        <input type="password" id="senha-nova" placeholder="Mínimo 6 caracteres" />
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-secundario" onclick="fecharModal('modal-senha')">Cancelar</button>
+      <button class="btn btn-primario" onclick="alterarSenha()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const sessao = verificarSessao();
+let usuarioSenhaId = null;
+
+// Apenas admin acessa esta página
+document.addEventListener('DOMContentLoaded', () => {
+  if (!isAdmin()) {
+    document.getElementById('conteudo').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:60vh;">
+        <div style="text-align:center;color:#C62828;">
+          <div style="font-size:3rem;margin-bottom:12px">🔒</div>
+          <p>Acesso restrito a administradores.</p>
+          <a href="index.html" class="btn btn-secundario" style="margin-top:16px">Voltar</a>
+        </div>
+      </div>`;
+    return;
+  }
+  renderizarMenu('admin.html');
+  carregarUsuarios();
+});
+
+async function carregarUsuarios() {
+  try {
+    const res = await fetch(`${EDGE_URL}/criar-usuario`, {
+      method: 'POST',
+      headers: headersAnon(),
+      body: JSON.stringify({ acao: 'listar' })
+    });
+    const dados = await res.json();
+    if (!res.ok) throw new Error(dados.error || 'Erro ao listar');
+    renderizarLista(dados.usuarios || []);
+  } catch (e) {
+    document.getElementById('lista-usuarios').innerHTML =
+      `<tr><td colspan="6" style="color:#C62828;padding:20px">Erro ao carregar usuários: ${e.message}</td></tr>`;
+  }
+}
+
+function renderizarLista(lista) {
+  const tbody = document.getElementById('lista-usuarios');
+  if (!lista.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="estado-vazio"><div class="icone-vazio">👤</div><p>Nenhum usuário cadastrado.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(u => {
+    const nome    = u.user_metadata?.nome  || u.email?.split('@')[0] || '—';
+    const perfil  = u.user_metadata?.perfil|| 'usuario';
+    const ativo   = !u.banned_until;
+    const criado  = formatarData(u.created_at);
+    return `
+      <tr>
+        <td><strong>${nome}</strong></td>
+        <td>${u.email || '—'}</td>
+        <td><span class="badge badge-${perfil === 'admin' ? 'aviso' : 'ativo'}">${perfil}</span></td>
+        <td>${criado}</td>
+        <td><span class="badge badge-${ativo ? 'ativo' : 'inativo'}">${ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-secundario btn-sm" onclick="abrirModalSenha('${u.id}','${nome.replace(/'/g,"\\'")}')">🔑 Senha</button>
+          <button class="btn btn-sm ${ativo ? 'btn-perigo' : 'btn-sucesso'}" onclick="toggleUsuario('${u.id}',${ativo})">
+            ${ativo ? '🚫 Desativar' : '✅ Ativar'}
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function abrirModalNovo() {
+  document.getElementById('novo-login').value  = '';
+  document.getElementById('novo-nome').value   = '';
+  document.getElementById('nova-senha').value  = '';
+  document.getElementById('novo-perfil').value = 'usuario';
+  abrirModal('modal-usuario');
+}
+
+async function criarUsuario() {
+  const login = document.getElementById('novo-login').value.trim();
+  const nome  = document.getElementById('novo-nome').value.trim();
+  const senha = document.getElementById('nova-senha').value;
+  const perfil= document.getElementById('novo-perfil').value;
+
+  if (!login || !senha) { toast('Preencha login e senha.', 'erro'); return; }
+  if (senha.length < 6) { toast('Senha mínima de 6 caracteres.', 'erro'); return; }
+
+  const email = login + DOMINIO;
+
+  try {
+    const res = await fetch(`${EDGE_URL}/criar-usuario`, {
+      method: 'POST',
+      headers: headersAnon(),
+      body: JSON.stringify({ acao: 'criar', email, senha, nome: nome || login, perfil })
+    });
+    const dados = await res.json();
+    if (!res.ok) throw new Error(dados.error || 'Erro ao criar');
+    toast('Usuário criado!', 'sucesso');
+    fecharModal('modal-usuario');
+    carregarUsuarios();
+  } catch (e) {
+    toast('Erro: ' + e.message, 'erro');
+  }
+}
+
+function abrirModalSenha(id, nome) {
+  usuarioSenhaId = id;
+  document.getElementById('usuario-senha-nome').textContent = nome;
+  document.getElementById('senha-nova').value = '';
+  abrirModal('modal-senha');
+}
+
+async function alterarSenha() {
+  const senha = document.getElementById('senha-nova').value;
+  if (senha.length < 6) { toast('Mínimo 6 caracteres.', 'erro'); return; }
+
+  try {
+    const res = await fetch(`${EDGE_URL}/criar-usuario`, {
+      method: 'POST',
+      headers: headersAnon(),
+      body: JSON.stringify({ acao: 'alterarSenha', userId: usuarioSenhaId, senha })
+    });
+    const dados = await res.json();
+    if (!res.ok) throw new Error(dados.error || 'Erro');
+    toast('Senha alterada!', 'sucesso');
+    fecharModal('modal-senha');
+  } catch (e) {
+    toast('Erro: ' + e.message, 'erro');
+  }
+}
+
+async function toggleUsuario(id, ativo) {
+  const acao = ativo ? 'desativar' : 'ativar';
+  try {
+    const res = await fetch(`${EDGE_URL}/criar-usuario`, {
+      method: 'POST',
+      headers: headersAnon(),
+      body: JSON.stringify({ acao, userId: id })
+    });
+    const dados = await res.json();
+    if (!res.ok) throw new Error(dados.error || 'Erro');
+    toast(ativo ? 'Usuário desativado.' : 'Usuário ativado!', ativo ? 'aviso' : 'sucesso');
+    carregarUsuarios();
+  } catch (e) {
+    toast('Erro: ' + e.message, 'erro');
+  }
+}
+</script>
+</body>
+</html>
