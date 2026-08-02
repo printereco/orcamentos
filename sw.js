@@ -1,55 +1,77 @@
-// Printer & Co. — Service Worker v4.0
-const CACHE = 'printer-co-v4';
-const ARQUIVOS = [
-  '/',
-  '/index.html',
-  '/login.html',
-  '/clientes.html',
-  '/financeiro.html',
-  '/admin.html',
-  '/css/styles.css',
-  '/js/config.js',
-  '/js/auth.js',
-  '/js/utils.js',
-  '/js/menu.js',
-  '/manifest.json'
+var CACHE = 'printer-orcamento-v26';
+var FILES = [
+  './',
+  './index.html',
+  './ver.html',
+  './login.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-// Instala e faz cache dos arquivos estáticos
-self.addEventListener('install', e => {
+self.addEventListener('install', function(e) {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(function(cache) {
+      return cache.addAll(FILES);
+    })
   );
 });
 
-// Remove caches antigos
-self.addEventListener('activate', e => {
+self.addEventListener('activate', function(e) {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    })
   );
+  self.clients.claim();
 });
 
-// Network-first para HTML, cache-first para estáticos
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
+self.addEventListener('fetch', function(e) {
+  // Ignorar requisições não-GET (POST, PATCH, DELETE)
+  if (e.request.method !== 'GET') return;
 
-  // Ignora requisições externas (Supabase, etc)
-  if (!url.origin.includes(self.location.origin)) return;
+  // Ignorar requisições ao Supabase
+  if (e.request.url.indexOf('supabase.co') !== -1) return;
 
-  // HTML: sempre tenta rede primeiro
-  if (e.request.headers.get('accept')?.includes('text/html')) {
+  var isHTML = e.request.url.endsWith('.html') || e.request.url.endsWith('/');
+
+  if (isHTML) {
+    // HTML: rede primeiro, cache como fallback
     e.respondWith(
       fetch(e.request)
-        .then(res => { const c = res.clone(); caches.open(CACHE).then(cache => cache.put(e.request, c)); return res; })
-        .catch(() => caches.match(e.request))
+        .then(function(response) {
+          var clone = response.clone();
+          caches.open(CACHE).then(function(cache) {
+            cache.put(e.request, clone);
+          });
+          return response;
+        })
+        .catch(function() {
+          return caches.match(e.request);
+        })
     );
-    return;
+  } else {
+    // Assets: cache primeiro
+    e.respondWith(
+      caches.match(e.request).then(function(cached) {
+        return cached || fetch(e.request).then(function(response) {
+          var clone = response.clone();
+          caches.open(CACHE).then(function(cache) {
+            cache.put(e.request, clone);
+          });
+          return response;
+        });
+      })
+    );
   }
+});
 
-  // Demais recursos: cache-first
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+self.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
