@@ -50,7 +50,11 @@
   .btn-salvar { display: block; margin: 1.5rem auto 0; background: #111; color: white; border: none; border-radius: 8px; height: 46px; padding: 0 28px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial, Helvetica, sans-serif; transition: background .15s; }
   .btn-salvar:hover { background: #E91E8C; }
   .btn-rodape { text-align: center; padding: 1.5rem 2rem 2rem; border-top: 1px solid #EEE; }
-  @media (max-width: 480px) {
+  @media print {
+    body { background: white; padding: 0; }
+    .card { box-shadow: none; border-radius: 0; }
+    .btn-rodape, #btnRodape, #btnRodape2 { display: none !important; }
+  }
     .hdr { padding: 1rem; }
     .hdr img { height: 44px; }
     .doc-title { font-size: 20px; }
@@ -176,7 +180,7 @@
         + '<div class="footer"><div>'+f1+'</div><div>'+f2+'</div></div>'
       + '</div>'
       + '<div class="btn-rodape" id="btnRodape2">'
-        + '<button class="btn-salvar" onclick="gerarPDF()">Salvar PDF</button>'
+        + '<button class="btn-salvar" onclick="window.print()">Salvar PDF</button>'
       + '</div>';
 
     document.title = 'Orçamento — ' + cliente;
