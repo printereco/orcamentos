@@ -184,8 +184,8 @@ async function carregar() {
   const fim    = document.getElementById('data-fim').value;
 
   let filtro = 'select=*';
-  if (inicio) filtro += `&data=gte.${inicio}`;
-  if (fim)    filtro += `&data=lte.${fim}`;
+  if (inicio) filtro += `&criado_em=gte.${inicio}`;
+  if (fim)    filtro += `&criado_em=lte.${fim}T23:59:59`;
   filtro += '&order=id.desc';
 
   try {
