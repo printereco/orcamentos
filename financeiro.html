@@ -186,7 +186,7 @@ async function carregar() {
   let filtro = 'select=*';
   if (inicio) filtro += `&data=gte.${inicio}`;
   if (fim)    filtro += `&data=lte.${fim}`;
-  filtro += '&order=criado_em.desc';
+  filtro += '&order=id.desc';
 
   try {
     orcamentos = await supaGet('orcamentos', filtro);
@@ -247,7 +247,7 @@ function renderizarGrafico() {
 function renderizarTopClientes() {
   const mapa = {};
   orcamentos.filter(o => o.status === 'pago').forEach(o => {
-    const nome = o.cliente_nome || 'Sem nome';
+    const nome = o.cliente || 'Sem nome';
     mapa[nome] = (mapa[nome] || 0) + (o.total || 0);
   });
 
@@ -281,7 +281,7 @@ function renderizarResumoPeriodo() {
   el.innerHTML = recentes.map(o => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F0F0F0;">
       <div>
-        <div style="font-weight:600;font-size:0.85rem">${o.cliente_nome||'—'}</div>
+        <div style="font-weight:600;font-size:0.85rem">${o.cliente||'—'}</div>
         <div style="font-size:0.75rem;color:#888">${formatarData(o.data)}</div>
       </div>
       <div style="text-align:right">

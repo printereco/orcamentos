@@ -447,14 +447,14 @@ function editarOrcamento(id) {
   if (!orc) return;
   editandoId = id;
   document.getElementById('form-titulo').textContent = `Editando Orçamento #${id}`;
-  document.getElementById('campo-cliente').value    = orc.cliente_nome || '';
-  document.getElementById('cliente-id').value       = orc.cliente_id  || '';
+  document.getElementById('campo-cliente').value    = orc.cliente      || '';
+  document.getElementById('cliente-id').value       = '';
   document.getElementById('campo-solicitante').value= orc.solicitante  || '';
-  document.getElementById('campo-data').value       = orc.data         || '';
-  document.getElementById('campo-validade').value   = orc.validade      || '';
-  document.getElementById('campo-obs').value        = orc.observacoes  || '';
-  document.getElementById('campo-desconto').value   = orc.desconto_valor || 0;
-  document.getElementById('tipo-desconto').value    = orc.desconto_tipo  || 'reais';
+  document.getElementById('campo-data').value       = orc.criado_em ? orc.criado_em.split('T')[0] : '';
+  document.getElementById('campo-validade').value   = orc.valido_ate   || '';
+  document.getElementById('campo-obs').value        = orc.obs          || '';
+  document.getElementById('campo-desconto').value   = orc.desconto     || 0;
+  document.getElementById('tipo-desconto').value    = orc.tipo_desc    || 'reais';
 
   document.getElementById('itens-tbody').innerHTML = '';
   itemCounter = 0;
@@ -486,20 +486,15 @@ async function salvarOrcamento() {
   const total       = Math.max(0, subtotal - descontoVal);
 
   const dados = {
-    cliente_nome:    clienteNome,
-    cliente_id:      clienteId || null,
+    cliente:         clienteNome,
     solicitante:     document.getElementById('campo-solicitante').value.trim(),
-    data:            document.getElementById('campo-data').value,
-    validade:        document.getElementById('campo-validade').value,
-    observacoes:     document.getElementById('campo-obs').value.trim(),
+    valido_ate:      document.getElementById('campo-validade').value,
+    obs:             document.getElementById('campo-obs').value.trim(),
     itens:           itens,
-    subtotal,
-    desconto_valor:  descValor,
-    desconto_tipo:   tipoDesc,
-    desconto_real:   descontoVal,
+    desconto:        descontoVal,
+    tipo_desc:       tipoDesc,
     total,
     status:          'pendente',
-    usuario:         sessao.usuario,
     criado_em:       new Date().toISOString()
   };
 
@@ -527,7 +522,7 @@ async function salvarOrcamento() {
 // =============================================
 async function carregarOrcamentos() {
   try {
-    orcamentos = await supaGet('orcamentos', 'select=*&order=criado_em.desc');
+    orcamentos = await supaGet('orcamentos', 'select=*&order=id.desc');
     renderizarLista(orcamentos);
   } catch (e) {
     document.getElementById('lista-orcamentos').innerHTML =
@@ -539,7 +534,7 @@ function filtrarLista() {
   const busca  = document.getElementById('filtro-busca').value.toLowerCase();
   const status = document.getElementById('filtro-status').value;
   const filtrados = orcamentos.filter(o => {
-    const matchBusca  = !busca  || (o.cliente_nome||'').toLowerCase().includes(busca) || String(o.id).includes(busca);
+    const matchBusca  = !busca  || (o.cliente||'').toLowerCase().includes(busca) || String(o.id).includes(busca);
     const matchStatus = !status || o.status === status;
     return matchBusca && matchStatus;
   });
@@ -556,10 +551,10 @@ function renderizarLista(lista) {
   tbody.innerHTML = lista.map(o => `
     <tr>
       <td><strong>#${o.id}</strong></td>
-      <td>${o.cliente_nome || '—'}</td>
-      <td>${o.solicitante  || '—'}</td>
-      <td>${formatarData(o.data)}</td>
-      <td><strong>${formatarMoeda(o.total)}</strong></td>
+      <td>${o.cliente || '—'}</td>
+      <td>${o.solicitante||o.referencia  || '—'}</td>
+      <td>${formatarData(o.criado_em)}</td>
+      <td><strong>${formatarMoeda(o.total||0)}</strong></td>
       <td>
         <button class="status-btn status-${o.status||'pendente'}" onclick="ciclarStatus(${o.id},'${o.status||'pendente'}')">
           ${(o.status||'pendente').toUpperCase()}
