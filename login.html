@@ -197,11 +197,12 @@
         }
 
         const sessao = {
-          token:  dados.access_token,
+          token:   dados.access_token,
+          refresh: dados.refresh_token,
           usuario: dados.user.email,
-          nome:   dados.user.user_metadata?.nome || usuario,
-          perfil: dados.user.user_metadata?.perfil || 'usuario',
-          expira: Date.now() + DURACAO_SESSAO
+          nome:    dados.user.user_metadata?.nome || usuario,
+          perfil:  dados.user.user_metadata?.perfil || 'usuario',
+          expira:  Date.now() + DURACAO_SESSAO
         };
 
         localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));

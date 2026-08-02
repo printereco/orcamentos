@@ -59,13 +59,28 @@ function salvarSessao(usuario, token) {
   return sessao;
 }
 
+// Recupera o token de acesso — tenta sessão própria, depois formato nativo do Supabase
+function getToken() {
+  const s = getSessao();
+  if (s && s.token) return s.token;
+
+  // Fallback: formato nativo que o Supabase salva no localStorage
+  try {
+    const chave = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+    if (chave) {
+      const dados = JSON.parse(localStorage.getItem(chave));
+      return dados?.access_token || SUPABASE_ANON;
+    }
+  } catch {}
+  return SUPABASE_ANON;
+}
+
 // Cabeçalhos para requisições autenticadas
 function headersAuth() {
-  const s = getSessao();
   return {
     'Content-Type': 'application/json',
     'apikey': SUPABASE_ANON,
-    'Authorization': `Bearer ${s ? s.token : SUPABASE_ANON}`
+    'Authorization': `Bearer ${getToken()}`
   };
 }
 
