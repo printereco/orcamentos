@@ -1,224 +1,325 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Orçamentos — Printer & Co.</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="manifest" href="manifest.json">
-  <script src="js/config.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/menu.js"></script>
-  <style>
-    /* Estilos específicos da página de Orçamentos */
-    .orcamento-form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orçamentos — Printer & Co.</title>
+<link rel="manifest" href="manifest.json">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/menu.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --pink: #E91E8C;
+    --ink: #111111;
+    --mid: #333333;
+    --sub: #555555;
+    --line: #CCCCCC;
+    --bg: #E8E8E8;
+    --mono: "Courier New", Courier, monospace;
+    --sidebar-w: 240px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Arial, sans-serif; background: #EBEBEB; color: var(--ink); min-height: 100vh; display: flex; -webkit-font-smoothing: antialiased; }
+  input, textarea, button { font-family: inherit; }
 
-    .itens-tabela { width:100%; border-collapse:collapse; margin-bottom:10px; }
-    .itens-tabela th {
-      background: #1A1A1A;
-      color:#fff;
-      padding:10px 10px;
-      font-size:0.78rem;
-      text-align:left;
-      text-transform:uppercase;
-    }
-    .itens-tabela td { padding:8px 10px; border-bottom:1px solid #eee; font-size:0.88rem; }
-    .itens-tabela input, .itens-tabela select {
-      width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px;
-      font-size:0.85rem; font-family:inherit; outline:none;
-    }
-    .itens-tabela input:focus, .itens-tabela select:focus { border-color:#E91E8C; }
-    .itens-tabela .btn-remover {
-      background:none; border:none; color:#C62828; cursor:pointer;
-      font-size:1rem; padding:4px 8px; border-radius:4px;
-    }
-    .itens-tabela .btn-remover:hover { background:#FFEBEE; }
+  /* SIDEBAR */
+  #sidebar { width: var(--sidebar-w); min-height: 100vh; background: #1A1A1A; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100; }
+  #sidebar nav a { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.92rem; font-weight: 500; border-left: 3px solid transparent; transition: all 0.2s; }
+  #sidebar nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+  #sidebar nav a.ativo { color: var(--pink); border-left-color: var(--pink); background: rgba(233,30,140,0.08); }
+  #sidebar nav a .icone { font-size: 1.1rem; width: 20px; text-align: center; }
+  #sidebar-logo { padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .logo-texto { color: #fff; font-size: 1.2rem; font-weight: 700; }
+  .logo-texto span { color: var(--pink); }
+  #sidebar-rodape { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; }
+  #sidebar-rodape .usuario-nome { color: rgba(255,255,255,0.5); font-size: 0.78rem; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #sidebar-rodape .btn-sair { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.5); font-size: 0.82rem; cursor: pointer; background: none; border: none; padding: 0; transition: color 0.2s; }
+  #sidebar-rodape .btn-sair:hover { color: #C62828; }
+  #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+  #sidebar-overlay.aberto { display: block; }
+  #btn-menu-mobile { display: none; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--ink); padding: 4px 8px; }
 
-    .totais-box {
-      background:#1A1A1A;
-      border-radius:10px;
-      padding:16px 20px;
-      color:#fff;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .totais-linha { display:flex; justify-content:space-between; font-size:0.88rem; color:rgba(255,255,255,0.7); }
-    .totais-linha.destaque { font-size:1.1rem; font-weight:800; color:#fff; border-top:1px solid rgba(255,255,255,0.2); padding-top:8px; margin-top:4px; }
-    .totais-linha.destaque span:last-child { color:#E91E8C; }
+  /* CONTEÚDO */
+  #conteudo { margin-left: var(--sidebar-w); flex: 1; }
+  .page { max-width: 780px; margin: 0 auto; padding: 1.5rem 1.5rem 5rem; }
 
-    .acoes-orcamento {
-      display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;
-    }
+  /* HEADER DA PÁGINA */
+  .pagina-header { background: #fff; border-bottom: 1px solid #E0E0E0; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 50; }
+  .pagina-header h1 { font-size: 1.1rem; font-weight: 700; }
+  #btn-menu-mobile { display: none; }
 
-    /* Lista de orçamentos */
-    .filtros-bar {
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;
-    }
-    .filtros-bar input, .filtros-bar select {
-      padding:8px 12px; border:1px solid #ddd; border-radius:8px;
-      font-size:0.88rem; font-family:inherit; outline:none;
-    }
-    .filtros-bar input:focus, .filtros-bar select:focus { border-color:#E91E8C; }
+  /* MASTHEAD */
+  .masthead { background: linear-gradient(135deg, #1a1a1a 0%, #111111 60%, #0d0d0d 100%); border-radius: 12px 12px 0 0; padding: 2rem 2.5rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-bottom: 2px solid var(--pink); position: relative; }
+  .masthead::before { content: ""; position: absolute; inset: 0; border-radius: 12px 12px 0 0; background: radial-gradient(ellipse at top right, rgba(233,30,140,0.08) 0%, transparent 60%); pointer-events: none; }
+  .masthead-logo { height: 64px; width: auto; display: block; }
+  .masthead-right { text-align: right; }
+  .masthead-doc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--pink); margin-bottom: 5px; }
+  .masthead-doc-title { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; color: #fff; line-height: 1; margin-bottom: 12px; }
+  .meta-row { display: flex; justify-content: flex-end; gap: 8px; font-size: 11px; }
+  .meta-k { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); }
+  .meta-v { font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,0.85); letter-spacing: 0.04em; }
 
-    .status-btn {
-      display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px;
-      font-size:0.75rem; font-weight:700; text-transform:uppercase;
-      cursor:pointer; border:none; letter-spacing:0.3px;
-    }
-    .status-pendente  { background:#FFF8E1; color:#F57F17; }
-    .status-pago      { background:#E8F5E9; color:#2E7D32; }
-    .status-cancelado { background:#FFEBEE; color:#C62828; }
+  /* CARD BRANCO */
+  .card-orc { background: #fff; border-radius: 0 0 12px 12px; padding: 2rem 2.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
 
-    .autocomplete-box {
-      position:relative;
-    }
-    .autocomplete-lista {
-      position:absolute; top:100%; left:0; right:0;
-      background:#fff; border:1px solid #ddd; border-radius:8px;
-      box-shadow:0 4px 16px rgba(0,0,0,0.12); z-index:50;
-      max-height:200px; overflow-y:auto; display:none;
-    }
-    .autocomplete-lista.aberta { display:block; }
-    .autocomplete-item {
-      padding:9px 14px; font-size:0.88rem; cursor:pointer; transition:background 0.15s;
-    }
-    .autocomplete-item:hover { background:#FCE4F3; }
-  </style>
+  /* CLIENTE */
+  .client-row { display: grid; grid-template-columns: 2.5fr 1fr 130px; gap: 1.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--line); margin-bottom: 2rem; }
+  .cf { display: flex; flex-direction: column; gap: 6px; }
+  .cf label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #666; }
+  .cf input { background: none; border: none; border-bottom: 1.5px solid var(--line); border-radius: 0; padding: 6px 0; font-size: 14px; font-weight: 500; color: var(--ink); outline: none; width: 100%; transition: border-color .15s; }
+  .cf input::placeholder { color: #CCC; font-weight: 400; }
+  .cf input:focus { border-color: var(--ink); }
+  .cf input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.3; }
+  .cliente-wrap { position: relative; }
+  .cliente-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #CCC; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 100; max-height: 220px; overflow-y: auto; margin-top: 4px; }
+  .cliente-dropdown.open { display: block; }
+  .cliente-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #F0F0F0; transition: background .1s; }
+  .cliente-item:last-child { border-bottom: none; }
+  .cliente-item:hover { background: #F9F0F5; }
+  .cliente-item-nome { font-size: 13px; font-weight: 600; color: #111; }
+  .cliente-item-cnpj { font-size: 11px; color: #888; margin-top: 2px; }
+
+  /* SECTION LABEL */
+  .sec-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #666; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .sec-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* REF / SOLICITANTE */
+  .ref-row { margin-bottom: 2rem; }
+  .ref-input { font-size: 13.5px; padding: 6px 0; border: none; border-bottom: 1.5px solid var(--line); background: none; width: 100%; outline: none; color: var(--ink); transition: border-color .15s; }
+  .ref-input::placeholder { color: #CCC; }
+  .ref-input:focus { border-color: var(--ink); }
+
+  /* ITENS */
+  .items-section { margin-bottom: 2rem; }
+  .tbl-head { display: grid; grid-template-columns: 1fr 64px 130px 110px 32px; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+  .tbl-head span { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
+  .tbl-head span:not(:first-child) { text-align: right; }
+  .item-row { display: grid; grid-template-columns: 1fr 64px 130px 110px 32px; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid #F0F0F0; }
+  .item-row:last-child { border-bottom: none; }
+  .item-row input { background: none; border: none; border-bottom: 1.5px solid transparent; border-radius: 0; padding: 6px 0; font-size: 13.5px; font-weight: 400; color: var(--ink); width: 100%; outline: none; transition: border-color .15s; }
+  .item-row input:focus { border-color: var(--ink); }
+  .item-row input::placeholder { color: #CCC; }
+  .item-row input.c { text-align: center; }
+  .item-row input.r { text-align: right; }
+  .itv { font-family: var(--mono); font-size: 13px; font-weight: 500; text-align: right; color: var(--ink); }
+  .itv.empty { color: #DDD; font-family: inherit; font-weight: 400; }
+  .btn-remove { width: 28px; height: 28px; background: none; border: none; border-radius: 50%; color: #CCC; cursor: pointer; font-size: 17px; display: flex; align-items: center; justify-content: center; transition: color .15s, background .15s; margin-left: auto; }
+  .btn-remove:hover { color: #E24B4A; background: #fff5f5; }
+  .btn-add-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; padding: 10px 0 0; transition: color .15s; letter-spacing: 0.02em; }
+  .btn-add-row:hover { color: var(--ink); }
+
+  /* BOTTOM */
+  .bottom-row { display: grid; grid-template-columns: 1fr 240px; gap: 2rem; padding-top: 2rem; border-top: 1px solid var(--line); margin-top: 1rem; margin-bottom: 2.5rem; align-items: start; }
+  .obs-textarea { width: 100%; min-height: 90px; background: none; border: none; border-left: 2px solid var(--line); padding: 4px 12px; font-size: 13px; color: var(--mid); line-height: 1.7; resize: vertical; outline: none; transition: border-color .15s; }
+  .obs-textarea::placeholder { color: #CCC; }
+  .obs-textarea:focus { border-color: var(--ink); }
+  .disc-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+  .disc-field label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #666; }
+  .disc-field input { background: none; border: none; border-bottom: 1.5px solid var(--line); padding: 5px 0; font-size: 14px; color: var(--ink); width: 100%; outline: none; text-align: right; transition: border-color .15s; }
+  .disc-field input:focus { border-color: var(--ink); }
+  .tot-line { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; font-size: 12.5px; color: #666; border-bottom: 1px solid #F0F0F0; }
+  .tot-line .tv { font-family: var(--mono); color: var(--mid); }
+  .tot-line.disc .tv { color: #E24B4A; }
+  .tot-final { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0 0; border-top: 1.5px solid var(--ink); margin-top: 8px; }
+  .tot-final .fl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #333; }
+  .tot-final .fa { font-family: var(--mono); font-size: 26px; font-weight: 500; color: var(--pink); letter-spacing: -0.04em; }
+
+  /* ACTIONS */
+  .actions-strip { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-act { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 8px; border: none; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: transform .1s, box-shadow .2s, filter .15s; text-decoration: none; }
+  .btn-act:active { transform: scale(.97); }
+  .btn-salvar { background: #111; color: #fff; }
+  .btn-salvar:hover { background: var(--pink); }
+  .btn-wpp { background: #25D366; color: #fff; }
+  .btn-wpp:hover { filter: brightness(1.1); }
+  .btn-pdf { background: #E91E8C; color: #fff; }
+  .btn-pdf:hover { filter: brightness(1.1); }
+  .btn-cancelar { background: none; border: 1px solid #CCC; color: #555; }
+  .btn-cancelar:hover { border-color: #999; }
+
+  /* LISTA */
+  .lista-section { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: hidden; }
+  .lista-header { padding: 1rem 1.5rem; border-bottom: 1px solid #F0F0F0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .lista-busca { flex: 1; min-width: 180px; border: 1px solid #E0E0E0; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
+  .lista-busca:focus { border-color: var(--pink); }
+  .lista-status { border: 1px solid #E0E0E0; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; background: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #111; color: #fff; padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #F5F5F5; transition: background .15s; }
+  tbody tr:hover { background: #FDF5F9; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 14px; color: #333; vertical-align: middle; }
+  .badge-status { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; cursor: pointer; border: none; letter-spacing: 0.3px; }
+  .badge-pendente { background: #FFF8E1; color: #F57F17; }
+  .badge-pago { background: #E8F5E9; color: #2E7D32; }
+  .badge-cancelado { background: #FFEBEE; color: #C62828; }
+  .estado-vazio { text-align: center; padding: 3rem; color: #AAA; }
+
+  /* TOAST */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast { padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.15); max-width: 320px; }
+  .toast-sucesso { background: #2E7D32; }
+  .toast-erro { background: #C62828; }
+  .toast-aviso { background: #F57F17; }
+  .toast-info { background: var(--pink); }
+
+  @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); }
+    #sidebar.aberto { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+    #conteudo { margin-left: 0; }
+    #btn-menu-mobile { display: block; }
+    .client-row { grid-template-columns: 1fr; }
+    .tbl-head, .item-row { grid-template-columns: 1fr 50px 100px 90px 28px; }
+    .bottom-row { grid-template-columns: 1fr; }
+    .masthead { padding: 1.25rem 1.5rem; }
+    .masthead-logo { height: 48px; }
+    .masthead-doc-title { font-size: 24px; }
+    .card-orc { padding: 1.25rem 1.5rem; }
+  }
+</style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <div id="sidebar"></div>
 <div id="sidebar-overlay"></div>
 
-<!-- Conteúdo -->
 <div id="conteudo">
 
-  <!-- Header -->
+  <!-- Header mobile -->
   <div class="pagina-header">
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
       <button id="btn-menu-mobile">☰</button>
-      <h1>📋 Orçamentos</h1>
+      <span style="font-size:1rem;font-weight:700;">📋 Orçamentos</span>
     </div>
-    <button class="btn btn-primario" onclick="abrirFormNovo()">+ Novo Orçamento</button>
+    <button class="btn-act btn-salvar" onclick="abrirFormNovo()" style="height:36px;padding:0 14px;font-size:12px;">+ Novo</button>
   </div>
 
-  <!-- Corpo -->
-  <div class="pagina-corpo">
+  <div class="page">
 
-    <!-- Painel: Formulário de orçamento -->
-    <div id="painel-form" style="display:none; margin-bottom:24px;">
-      <div class="card">
-        <div class="card-titulo" id="form-titulo">Novo Orçamento</div>
+    <!-- FORMULÁRIO -->
+    <div id="painel-form" style="display:none;margin-bottom:1.5rem;">
 
-        <div class="orcamento-form">
-          <!-- Coluna esquerda -->
-          <div>
-            <div class="form-grupo autocomplete-box">
-              <label>Cliente</label>
-              <input type="text" id="campo-cliente" placeholder="Digite o nome do cliente..." autocomplete="off" oninput="filtrarClientes(this.value)" onfocus="mostrarTodosClientes()" />
-              <div class="autocomplete-lista" id="lista-clientes"></div>
-            </div>
-            <input type="hidden" id="cliente-id" />
-
-            <div class="form-grupo">
-              <label>Solicitante</label>
-              <input type="text" id="campo-solicitante" placeholder="Nome de quem solicitou" />
-            </div>
-
-            <div class="form-linha form-linha-2">
-              <div class="form-grupo">
-                <label>Data</label>
-                <input type="date" id="campo-data" />
-              </div>
-              <div class="form-grupo">
-                <label>Validade</label>
-                <input type="date" id="campo-validade" />
-              </div>
-            </div>
-
-            <div class="form-grupo">
-              <label>Observações</label>
-              <textarea id="campo-obs" rows="3" placeholder="Condições, prazo de entrega..."></textarea>
-            </div>
+      <!-- Masthead -->
+      <div class="masthead">
+        <img class="masthead-logo" src="" alt="Printer & Co." onerror="this.style.display='none'">
+        <div class="masthead-right">
+          <div class="masthead-doc-label">Documento Comercial</div>
+          <div class="masthead-doc-title">Orçamento</div>
+          <div style="margin-top:8px;">
+            <div class="meta-row"><span class="meta-k">Emissão</span><span class="meta-v" id="metaEmissao">—</span></div>
+            <div class="meta-row"><span class="meta-k">Validade</span><span class="meta-v" id="metaValidade">—</span></div>
+            <div class="meta-row" id="metaRefRow" style="display:none"><span class="meta-k">Ref.</span><span class="meta-v" id="metaRef">—</span></div>
           </div>
+        </div>
+      </div>
 
-          <!-- Coluna direita: Itens -->
+      <!-- Corpo do card -->
+      <div class="card-orc">
+
+        <!-- Cliente -->
+        <div class="client-row">
+          <div class="cf cliente-wrap">
+            <label>Cliente / Empresa</label>
+            <input type="text" id="nomeCliente" placeholder="Buscar ou digitar cliente..." autocomplete="off" oninput="filtrarClientes(this.value)" onfocus="mostrarTodosClientes()">
+            <div class="cliente-dropdown" id="clienteDropdown"></div>
+          </div>
+          <div class="cf">
+            <label>CNPJ / CPF</label>
+            <input type="text" id="cnpjCliente" placeholder="00.000.000/0001-00">
+          </div>
+          <div class="cf">
+            <label>Válido até</label>
+            <input type="date" id="validade">
+          </div>
+        </div>
+
+        <!-- Solicitante -->
+        <div class="ref-row">
+          <div class="sec-label">Solicitante</div>
+          <input class="ref-input" type="text" id="solicitante" placeholder="Nome da pessoa que solicitou o orçamento">
+        </div>
+
+        <!-- Referência -->
+        <div class="ref-row">
+          <div class="sec-label">Referência</div>
+          <input class="ref-input" type="text" id="refEvento" placeholder="Ex: VI 159.26 CVL — Referência do projeto ou evento" oninput="atualizarRef()">
+        </div>
+
+        <!-- Itens -->
+        <div class="items-section">
+          <div class="sec-label">Itens do orçamento</div>
+          <div class="tbl-head">
+            <span>Descrição</span>
+            <span style="text-align:center">Qtd.</span>
+            <span style="text-align:right">Val. unitário</span>
+            <span style="text-align:right">Total</span>
+            <span></span>
+          </div>
+          <div id="itemsContainer"></div>
+          <button class="btn-add-row" onclick="adicionarItem()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Adicionar item
+          </button>
+        </div>
+
+        <!-- Bottom: obs + totais -->
+        <div class="bottom-row">
           <div>
-            <div class="form-grupo">
-              <label>Itens do Orçamento</label>
-              <div class="tabela-container" style="margin-bottom:8px;">
-                <table class="itens-tabela">
-                  <thead>
-                    <tr>
-                      <th style="width:40%">Descrição</th>
-                      <th style="width:10%">Qtd</th>
-                      <th style="width:10%">Un</th>
-                      <th style="width:18%">Preço Un.</th>
-                      <th style="width:16%">Total</th>
-                      <th style="width:6%"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="itens-tbody"></tbody>
-                </table>
-              </div>
-              <button class="btn btn-secundario btn-sm" onclick="adicionarItem()">+ Item</button>
-            </div>
-
-            <!-- Desconto -->
-            <div class="form-linha form-linha-2" style="margin-bottom:12px;">
-              <div class="form-grupo">
-                <label>Desconto</label>
-                <input type="number" id="campo-desconto" value="0" min="0" oninput="calcTotais()" />
-              </div>
-              <div class="form-grupo">
-                <label>Tipo</label>
-                <select id="tipo-desconto" onchange="calcTotais()">
-                  <option value="reais">R$</option>
-                  <option value="percent">%</option>
+            <div class="sec-label">Observações</div>
+            <textarea class="obs-textarea" id="obs" placeholder="Ex: Prazo de entrega: 3 dias úteis&#10;Pagamento via PIX"></textarea>
+          </div>
+          <div>
+            <div class="sec-label">Resumo</div>
+            <div class="disc-field">
+              <label>Desconto</label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" id="desconto" placeholder="0" min="0" step="0.01" style="flex:1" oninput="calcTotais()">
+                <select id="descontoTipo" style="height:32px;border:none;border-bottom:1.5px solid var(--line);background:none;font-size:13px;color:var(--ink);outline:none;cursor:pointer;padding:0 4px" onchange="calcTotais()">
+                  <option value="pct">%</option>
+                  <option value="brl">R$</option>
                 </select>
               </div>
             </div>
-
-            <!-- Totais -->
-            <div class="totais-box">
-              <div class="totais-linha"><span>Subtotal</span><span id="subtotal">R$ 0,00</span></div>
-              <div class="totais-linha"><span>Desconto</span><span id="desconto-exib">R$ 0,00</span></div>
-              <div class="totais-linha destaque"><span>Total</span><span id="total">R$ 0,00</span></div>
+            <div class="tot-line"><span>Subtotal</span><span class="tv" id="subtotal">R$ 0,00</span></div>
+            <div class="tot-line disc" id="descontoRow" style="display:none"><span>Desconto</span><span class="tv" id="descontoVal">—</span></div>
+            <div class="tot-final">
+              <span class="fl">Total</span>
+              <span class="fa" id="total">R$ 0,00</span>
             </div>
           </div>
         </div>
 
         <!-- Ações -->
-        <div class="acoes-orcamento">
-          <button class="btn btn-primario" onclick="salvarOrcamento()">💾 Salvar</button>
-          <button class="btn btn-secundario" id="btn-whatsapp" onclick="enviarWhatsApp()" style="display:none">📱 WhatsApp</button>
-          <button class="btn btn-secundario" id="btn-pdf" onclick="gerarPDF()" style="display:none">📄 PDF</button>
-          <button class="btn btn-secundario" onclick="fecharForm()">✕ Cancelar</button>
+        <div class="actions-strip">
+          <button class="btn-act btn-salvar" onclick="salvarOrcamento()">💾 Salvar</button>
+          <button class="btn-act btn-wpp" id="btn-whatsapp" onclick="enviarWhatsApp()" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.478 2 12.001c0 1.77.458 3.437 1.268 4.885L2 22l5.237-1.24A9.944 9.944 0 0012 22c5.522 0 10-4.478 10-10S17.522 2 12 2zm0 18.156a8.156 8.156 0 01-4.271-1.206l-.306-.183-3.106.735.774-3.009-.2-.309A8.157 8.157 0 013.844 12c0-4.502 3.654-8.156 8.156-8.156 4.503 0 8.157 3.654 8.157 8.157 0 4.502-3.654 8.155-8.157 8.155z"/></svg>
+            WhatsApp
+          </button>
+          <button class="btn-act btn-pdf" id="btn-pdf" onclick="gerarPDF()" style="display:none">
+            📄 PDF
+          </button>
+          <button class="btn-act btn-cancelar" onclick="fecharForm()">✕ Cancelar</button>
         </div>
+
+      </div><!-- /card-orc -->
+    </div><!-- /painel-form -->
+
+    <!-- LISTA -->
+    <div class="lista-section">
+      <div class="lista-header">
+        <input type="text" class="lista-busca" id="filtro-busca" placeholder="🔍 Buscar por cliente..." oninput="filtrarLista()">
+        <select class="lista-status" id="filtro-status" onchange="filtrarLista()">
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <button class="btn-act btn-salvar" onclick="abrirFormNovo()" style="height:38px;padding:0 16px;font-size:13px;">+ Novo Orçamento</button>
       </div>
-    </div>
-
-    <!-- Filtros -->
-    <div class="filtros-bar">
-      <input type="text" id="filtro-busca" placeholder="🔍 Buscar..." oninput="filtrarLista()" style="flex:1;min-width:180px;" />
-      <select id="filtro-status" onchange="filtrarLista()">
-        <option value="">Todos os status</option>
-        <option value="pendente">Pendente</option>
-        <option value="pago">Pago</option>
-        <option value="cancelado">Cancelado</option>
-      </select>
-    </div>
-
-    <!-- Tabela de orçamentos -->
-    <div class="tabela-container">
       <table>
         <thead>
           <tr>
@@ -232,521 +333,427 @@
           </tr>
         </thead>
         <tbody id="lista-orcamentos">
-          <tr><td colspan="7"><div class="carregando"><div class="spinner"></div></div></td></tr>
+          <tr><td colspan="7"><div class="estado-vazio">Carregando...</div></td></tr>
         </tbody>
       </table>
     </div>
 
-  </div><!-- /pagina-corpo -->
+  </div><!-- /page -->
 </div><!-- /conteudo -->
-
-<!-- Modal: Alterar Senha -->
-<div class="modal-overlay" id="modal-senha">
-  <div class="modal">
-    <div class="modal-cabecalho">
-      <h2>Alterar Senha</h2>
-      <button class="modal-fechar" onclick="fecharModal('modal-senha')">✕</button>
-    </div>
-    <div class="modal-corpo">
-      <div class="form-grupo">
-        <label>Nova Senha</label>
-        <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" />
-      </div>
-      <div class="form-grupo">
-        <label>Confirmar Senha</label>
-        <input type="password" id="conf-senha" placeholder="Repita a senha" />
-      </div>
-    </div>
-    <div class="modal-rodape">
-      <button class="btn btn-secundario" onclick="fecharModal('modal-senha')">Cancelar</button>
-      <button class="btn btn-primario" onclick="alterarSenha()">Salvar</button>
-    </div>
-  </div>
-</div>
 
 <div id="toast-container"></div>
 
-<!-- Scripts -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-// =============================================
-// INIT
-// =============================================
-const sessao = verificarSessao();
-let orcamentos = [];
-let clientes   = [];
-let config     = {};
-let editandoId = null;
+var LOGO_B64 = '';
 
-document.addEventListener('DOMContentLoaded', async () => {
+var sessao = verificarSessao();
+var orcamentos = [];
+var clientes   = [];
+var config     = {};
+var editandoId = null;
+var itemCounter= 0;
+
+document.addEventListener('DOMContentLoaded', async function() {
   renderizarMenu('index.html');
+  // Setar logo
+  var logoEl = document.querySelector('.masthead-logo');
+  if (logoEl && LOGO_B64) logoEl.src = LOGO_B64;
+
+  // Data padrão
+  var hoje = new Date();
+  var val  = new Date(); val.setDate(val.getDate() + 15);
+  document.getElementById('validade').value = val.toISOString().split('T')[0];
+
   await Promise.all([carregarConfig(), carregarClientes(), carregarOrcamentos()]);
-
-  // Data padrão = hoje
-  document.getElementById('campo-data').value = new Date().toISOString().split('T')[0];
-  // Validade padrão = +15 dias
-  const val = new Date(); val.setDate(val.getDate() + 15);
-  document.getElementById('campo-validade').value = val.toISOString().split('T')[0];
-
-  adicionarItem(); // começa com 1 item
+  adicionarItem();
 });
 
-// =============================================
-// CONFIG
-// =============================================
+// ===== CONFIG =====
 async function carregarConfig() {
-  try {
-    const dados = await supaGet('config', 'select=*&limit=1');
-    config = dados[0] || {};
-  } catch {
-    config = {};
-  }
+  try { var d = await supaGet('config','select=*&limit=1'); config = d[0]||{}; } catch(e){ config={}; }
 }
 
-// =============================================
-// CLIENTES
-// =============================================
+// ===== CLIENTES =====
 async function carregarClientes() {
-  try {
-    clientes = await supaGet('clientes', 'select=id,nome,email,telefone&order=nome');
-  } catch { clientes = []; }
+  try { clientes = await supaGet('clientes','select=id,nome,cnpj&order=nome'); } catch(e){ clientes=[]; }
 }
 
 function mostrarTodosClientes() {
-  const lista = document.getElementById('lista-clientes');
+  var dd = document.getElementById('clienteDropdown');
   if (!clientes.length) return;
-  lista.innerHTML = clientes.slice(0, 10).map(c => `
-    <div class="autocomplete-item" onclick="selecionarCliente('${c.id}','${c.nome.replace(/'/g,"\\'")}')">
-      ${c.nome}
-    </div>
-  `).join('');
-  lista.classList.add('aberta');
+  dd.innerHTML = clientes.slice(0,10).map(function(c) {
+    return '<div class="cliente-item" onclick="selecionarCliente(\''+c.id+'\',\''+c.nome.replace(/'/g,"\\'")+'\',\''+((c.cnpj||c.documento||'')).replace(/'/g,"\\'")+'\')">'
+      +'<div class="cliente-item-nome">'+c.nome+'</div>'
+      +(c.cnpj?'<div class="cliente-item-cnpj">'+c.cnpj+'</div>':'')
+      +'</div>';
+  }).join('');
+  dd.classList.add('open');
 }
 
 function filtrarClientes(busca) {
-  const lista = document.getElementById('lista-clientes');
-  if (busca.length === 0) { mostrarTodosClientes(); return; }
-
-  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()));
-  if (!filtrados.length) { lista.classList.remove('aberta'); return; }
-
-  lista.innerHTML = filtrados.slice(0, 10).map(c => `
-    <div class="autocomplete-item" onclick="selecionarCliente('${c.id}','${c.nome.replace(/'/g,"\\'")}')">
-      ${c.nome}
-    </div>
-  `).join('');
-  lista.classList.add('aberta');
+  var dd = document.getElementById('clienteDropdown');
+  if (!busca) { mostrarTodosClientes(); return; }
+  var fil = clientes.filter(function(c){ return c.nome.toLowerCase().includes(busca.toLowerCase()); });
+  if (!fil.length) { dd.classList.remove('open'); return; }
+  dd.innerHTML = fil.slice(0,10).map(function(c) {
+    return '<div class="cliente-item" onclick="selecionarCliente(\''+c.id+'\',\''+c.nome.replace(/'/g,"\\'")+'\',\''+((c.cnpj||c.documento||'')).replace(/'/g,"\\'")+'\')">'
+      +'<div class="cliente-item-nome">'+c.nome+'</div>'
+      +(c.cnpj?'<div class="cliente-item-cnpj">'+c.cnpj+'</div>':'')
+      +'</div>';
+  }).join('');
+  dd.classList.add('open');
 }
 
-function selecionarCliente(id, nome) {
-  document.getElementById('campo-cliente').value = nome;
-  document.getElementById('cliente-id').value = id;
-  document.getElementById('lista-clientes').classList.remove('aberta');
+function selecionarCliente(id, nome, cnpj) {
+  document.getElementById('nomeCliente').value  = nome;
+  document.getElementById('cnpjCliente').value  = cnpj||'';
+  document.getElementById('clienteDropdown').classList.remove('open');
 }
 
-// Fecha autocomplete ao clicar fora
-document.addEventListener('click', e => {
-  if (!e.target.closest('.autocomplete-box')) {
-    document.querySelectorAll('.autocomplete-lista').forEach(l => l.classList.remove('aberta'));
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.cliente-wrap')) {
+    var dd = document.getElementById('clienteDropdown');
+    if (dd) dd.classList.remove('open');
   }
 });
 
-// =============================================
-// ITENS
-// =============================================
-let itemCounter = 0;
-
-function adicionarItem(desc = '', qtd = 1, un = 'un', preco = 0) {
+// ===== ITENS =====
+function adicionarItem(desc, qtd, preco) {
   itemCounter++;
-  const id = `item_${itemCounter}`;
-  const tr = document.createElement('tr');
-  tr.id = id;
-  tr.innerHTML = `
-    <td><input type="text" placeholder="Descrição" value="${desc}" oninput="calcTotais()" /></td>
-    <td><input type="number" value="${qtd}" min="1" style="width:60px" oninput="calcTotais()" /></td>
-    <td>
-      <select onchange="calcTotais()">
-        ${['un','m²','m','kg','cx','pç','par'].map(u => `<option${u===un?' selected':''}>${u}</option>`).join('')}
-      </select>
-    </td>
-    <td><input type="number" value="${preco}" min="0" step="0.01" oninput="calcTotais()" /></td>
-    <td class="total-item">R$ 0,00</td>
-    <td><button class="btn-remover" onclick="removerItem('${id}')">✕</button></td>
-  `;
-  document.getElementById('itens-tbody').appendChild(tr);
+  var id = 'item_'+itemCounter;
+  var div = document.createElement('div');
+  div.className = 'item-row';
+  div.id = id;
+  div.innerHTML =
+    '<input type="text" placeholder="Descrição do item" value="'+(desc||'')+'" oninput="calcTotais()">'
+    +'<input type="number" class="c" value="'+(qtd||1)+'" min="0" step="1" oninput="calcTotais()">'
+    +'<input type="number" class="r" value="'+(preco||0)+'" min="0" step="0.01" placeholder="0,00" oninput="calcTotais()">'
+    +'<div class="itv empty" id="itv_'+id+'">R$ 0,00</div>'
+    +'<button class="btn-remove" onclick="removerItem(\''+id+'\')">×</button>';
+  document.getElementById('itemsContainer').appendChild(div);
   calcTotais();
 }
 
 function removerItem(id) {
-  const el = document.getElementById(id);
+  var el = document.getElementById(id);
   if (el) { el.remove(); calcTotais(); }
 }
 
+function fmt(v) {
+  return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
 function calcTotais() {
-  let subtotal = 0;
-  document.querySelectorAll('#itens-tbody tr').forEach(tr => {
-    const inputs = tr.querySelectorAll('input[type=number]');
-    if (inputs.length < 2) return;
-    const qtd   = parseFloat(inputs[0].value) || 0;
-    const preco = parseFloat(inputs[1].value) || 0;
-    const tot   = qtd * preco;
-    subtotal += tot;
-    const tdTotal = tr.querySelector('.total-item');
-    if (tdTotal) tdTotal.textContent = formatarMoeda(tot);
+  var sub = 0;
+  document.querySelectorAll('#itemsContainer .item-row').forEach(function(row) {
+    var inputs = row.querySelectorAll('input[type=number]');
+    var q = parseFloat(inputs[0]&&inputs[0].value||0)||0;
+    var u = parseFloat(inputs[1]&&inputs[1].value||0)||0;
+    var t = q*u; sub += t;
+    var itv = row.querySelector('[id^=itv_]');
+    if (itv) { itv.textContent = fmt(t); itv.className = t>0?'itv':'itv empty'; }
   });
+  var dv   = parseFloat(document.getElementById('desconto').value)||0;
+  var dt   = document.getElementById('descontoTipo').value;
+  var dr   = dt==='pct' ? sub*dv/100 : dv;
+  var total= Math.max(0, sub-dr);
+  document.getElementById('subtotal').textContent = fmt(sub);
+  document.getElementById('total').textContent    = fmt(total);
+  var dRow = document.getElementById('descontoRow');
+  if (dr>0) { document.getElementById('descontoVal').textContent='- '+fmt(dr); dRow.style.display='flex'; }
+  else { dRow.style.display='none'; }
+  // Atualizar validade no masthead
+  var v = document.getElementById('validade').value;
+  if (v) { var p=v.split('-'); document.getElementById('metaValidade').textContent=p[2]+'/'+p[1]+'/'+p[0]; }
+  document.getElementById('metaEmissao').textContent = new Date().toLocaleDateString('pt-BR');
+}
 
-  const descValor = parseFloat(document.getElementById('campo-desconto').value) || 0;
-  const tipoDesc  = document.getElementById('tipo-desconto').value;
-  const desconto  = tipoDesc === 'percent' ? subtotal * (descValor / 100) : descValor;
-  const total     = Math.max(0, subtotal - desconto);
-
-  document.getElementById('subtotal').textContent     = formatarMoeda(subtotal);
-  document.getElementById('desconto-exib').textContent = formatarMoeda(desconto);
-  document.getElementById('total').textContent        = formatarMoeda(total);
+function atualizarRef() {
+  var ref = document.getElementById('refEvento').value.trim();
+  document.getElementById('metaRef').textContent = ref||'—';
+  document.getElementById('metaRefRow').style.display = ref ? 'flex':'none';
 }
 
 function coletarItens() {
-  const itens = [];
-  document.querySelectorAll('#itens-tbody tr').forEach(tr => {
-    const inputs  = tr.querySelectorAll('input');
-    const select  = tr.querySelector('select');
-    const desc    = inputs[0]?.value?.trim();
+  var itens = [];
+  document.querySelectorAll('#itemsContainer .item-row').forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    var desc = inputs[0]&&inputs[0].value&&inputs[0].value.trim();
     if (!desc) return;
-    const qtd     = parseFloat(inputs[1]?.value) || 0;
-    const un      = select?.value || 'un';
-    const preco   = parseFloat(inputs[2]?.value) || 0;
-    itens.push({ desc, qtd, un, preco, total: qtd * preco });
+    var qtd  = parseFloat(inputs[1]&&inputs[1].value)||0;
+    var preco= parseFloat(inputs[2]&&inputs[2].value)||0;
+    itens.push({desc:desc, qtd:qtd, un:'un', preco:preco, total:qtd*preco,
+                d:desc, q:qtd, u:preco}); // compat legado
   });
   return itens;
 }
 
-// =============================================
-// FORMULÁRIO
-// =============================================
+// ===== FORM =====
 function abrirFormNovo() {
   editandoId = null;
-  document.getElementById('form-titulo').textContent = 'Novo Orçamento';
-  document.getElementById('campo-cliente').value   = '';
-  document.getElementById('cliente-id').value      = '';
-  document.getElementById('campo-solicitante').value= '';
-  document.getElementById('campo-obs').value        = '';
-  document.getElementById('campo-desconto').value  = '0';
-  document.getElementById('tipo-desconto').value   = 'reais';
-  document.getElementById('itens-tbody').innerHTML  = '';
+  document.getElementById('nomeCliente').value  = '';
+  document.getElementById('cnpjCliente').value  = '';
+  document.getElementById('solicitante').value  = '';
+  document.getElementById('refEvento').value    = '';
+  document.getElementById('obs').value          = '';
+  document.getElementById('desconto').value     = '';
+  document.getElementById('descontoTipo').value = 'pct';
+  document.getElementById('itemsContainer').innerHTML = '';
   itemCounter = 0;
-
-  document.getElementById('campo-data').value = new Date().toISOString().split('T')[0];
-  const val = new Date(); val.setDate(val.getDate() + 15);
-  document.getElementById('campo-validade').value = val.toISOString().split('T')[0];
-
-  document.getElementById('btn-whatsapp').style.display = 'none';
-  document.getElementById('btn-pdf').style.display      = 'none';
-
+  var val = new Date(); val.setDate(val.getDate()+15);
+  document.getElementById('validade').value = val.toISOString().split('T')[0];
+  document.getElementById('metaRefRow').style.display='none';
+  document.getElementById('btn-whatsapp').style.display='none';
+  document.getElementById('btn-pdf').style.display='none';
   adicionarItem();
-  document.getElementById('painel-form').style.display = 'block';
-  document.getElementById('painel-form').scrollIntoView({ behavior: 'smooth' });
+  calcTotais();
+  document.getElementById('painel-form').style.display='block';
+  document.getElementById('painel-form').scrollIntoView({behavior:'smooth'});
 }
 
 function fecharForm() {
-  document.getElementById('painel-form').style.display = 'none';
-  editandoId = null;
+  document.getElementById('painel-form').style.display='none';
+  editandoId=null;
 }
 
 function editarOrcamento(id) {
-  const orc = orcamentos.find(o => o.id === id);
+  var orc = orcamentos.find(function(o){ return o.id===id; });
   if (!orc) return;
   editandoId = id;
-  document.getElementById('form-titulo').textContent = `Editando Orçamento #${id}`;
-  document.getElementById('campo-cliente').value    = orc.cliente      || '';
-  document.getElementById('cliente-id').value       = '';
-  document.getElementById('campo-solicitante').value= orc.solicitante  || '';
-  document.getElementById('campo-data').value       = orc.criado_em ? orc.criado_em.split('T')[0] : '';
-  document.getElementById('campo-validade').value   = orc.valido_ate   || '';
-  document.getElementById('campo-obs').value        = orc.obs          || '';
-  document.getElementById('campo-desconto').value   = orc.desconto     || 0;
-  document.getElementById('tipo-desconto').value    = orc.tipo_desc    || 'reais';
-
-  document.getElementById('itens-tbody').innerHTML = '';
-  itemCounter = 0;
-  (orc.itens || []).forEach(i => adicionarItem(i.desc, i.qtd, i.un, i.preco));
-
-  document.getElementById('btn-whatsapp').style.display = '';
-  document.getElementById('btn-pdf').style.display      = '';
-
-  document.getElementById('painel-form').style.display = 'block';
-  document.getElementById('painel-form').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('nomeCliente').value  = orc.cliente||'';
+  document.getElementById('cnpjCliente').value  = orc.cnpj_cli||'';
+  document.getElementById('solicitante').value  = orc.solicitante||'';
+  document.getElementById('refEvento').value    = orc.referencia||'';
+  document.getElementById('obs').value          = orc.obs||orc.observacoes||'';
+  document.getElementById('desconto').value     = orc.desconto||0;
+  document.getElementById('descontoTipo').value = orc.tipo_desc||'pct';
+  document.getElementById('validade').value     = orc.valido_ate||'';
+  document.getElementById('itemsContainer').innerHTML='';
+  itemCounter=0;
+  (orc.itens||[]).forEach(function(i){
+    adicionarItem(i.desc||i.d, i.qtd||i.q||1, i.preco||i.u||0);
+  });
+  atualizarRef();
+  document.getElementById('btn-whatsapp').style.display='';
+  document.getElementById('btn-pdf').style.display='';
+  document.getElementById('painel-form').style.display='block';
+  document.getElementById('painel-form').scrollIntoView({behavior:'smooth'});
+  calcTotais();
 }
 
-// =============================================
-// SALVAR
-// =============================================
+// ===== SALVAR =====
 async function salvarOrcamento() {
-  const clienteNome = document.getElementById('campo-cliente').value.trim();
-  const clienteId   = document.getElementById('cliente-id').value;
-
-  if (!clienteNome) { toast('Informe o cliente.', 'erro'); return; }
-
-  const itens = coletarItens();
-  if (!itens.length) { toast('Adicione ao menos um item.', 'erro'); return; }
-
-  const subtotal    = itens.reduce((s, i) => s + i.total, 0);
-  const descValor   = parseFloat(document.getElementById('campo-desconto').value) || 0;
-  const tipoDesc    = document.getElementById('tipo-desconto').value;
-  const descontoVal = tipoDesc === 'percent' ? subtotal * (descValor / 100) : descValor;
-  const total       = Math.max(0, subtotal - descontoVal);
-
-  const dados = {
-    cliente:         clienteNome,
-    solicitante:     document.getElementById('campo-solicitante').value.trim(),
-    valido_ate:      document.getElementById('campo-validade').value,
-    obs:             document.getElementById('campo-obs').value.trim(),
-    itens:           itens,
-    desconto:        descontoVal,
-    tipo_desc:       tipoDesc,
-    total,
-    status:          'pendente',
-    criado_em:       new Date().toISOString()
+  var cliente = document.getElementById('nomeCliente').value.trim();
+  if (!cliente) { toast('Informe o cliente.','erro'); return; }
+  var itens = coletarItens();
+  if (!itens.length) { toast('Adicione ao menos um item.','erro'); return; }
+  var sub   = itens.reduce(function(s,i){return s+i.total;},0);
+  var dv    = parseFloat(document.getElementById('desconto').value)||0;
+  var dt    = document.getElementById('descontoTipo').value;
+  var dr    = dt==='pct'?sub*dv/100:dv;
+  var total = Math.max(0,sub-dr);
+  var dados = {
+    cliente:    cliente,
+    cnpj_cli:   document.getElementById('cnpjCliente').value.trim(),
+    solicitante:document.getElementById('solicitante').value.trim(),
+    referencia: document.getElementById('refEvento').value.trim(),
+    obs:        document.getElementById('obs').value.trim(),
+    itens:      itens,
+    desconto:   dv,
+    tipo_desc:  dt,
+    total:      total,
+    valido_ate: document.getElementById('validade').value,
+    status:     'pendente'
   };
-
   try {
     if (editandoId) {
-      await supaPatch('orcamentos', `id=eq.${editandoId}`, dados);
-      toast('Orçamento atualizado!', 'sucesso');
+      await supaPatch('orcamentos','id=eq.'+editandoId,dados);
+      toast('Orçamento atualizado!','sucesso');
     } else {
-      const [novo] = await supaPost('orcamentos', dados);
-      editandoId = novo.id;
-      toast('Orçamento salvo!', 'sucesso');
+      var novo = await supaPost('orcamentos',dados);
+      editandoId = novo[0].id;
+      toast('Orçamento salvo!','sucesso');
     }
-
-    document.getElementById('btn-whatsapp').style.display = '';
-    document.getElementById('btn-pdf').style.display      = '';
+    document.getElementById('btn-whatsapp').style.display='';
+    document.getElementById('btn-pdf').style.display='';
     await carregarOrcamentos();
-
-  } catch (e) {
-    toast('Erro ao salvar: ' + e.message, 'erro');
-  }
+  } catch(e){ toast('Erro ao salvar: '+e.message,'erro'); }
 }
 
-// =============================================
-// CARREGAR LISTA
-// =============================================
+// ===== LISTA =====
 async function carregarOrcamentos() {
   try {
-    orcamentos = await supaGet('orcamentos', 'select=*&order=id.desc');
+    orcamentos = await supaGet('orcamentos','select=*&order=id.desc');
     renderizarLista(orcamentos);
-  } catch (e) {
-    document.getElementById('lista-orcamentos').innerHTML =
-      `<tr><td colspan="7" style="color:#C62828;padding:20px">Erro ao carregar orçamentos.</td></tr>`;
+  } catch(e) {
+    document.getElementById('lista-orcamentos').innerHTML='<tr><td colspan="7" style="color:#C62828;padding:20px">Erro ao carregar.</td></tr>';
   }
 }
 
 function filtrarLista() {
-  const busca  = document.getElementById('filtro-busca').value.toLowerCase();
-  const status = document.getElementById('filtro-status').value;
-  const filtrados = orcamentos.filter(o => {
-    const matchBusca  = !busca  || (o.cliente||'').toLowerCase().includes(busca) || String(o.id).includes(busca);
-    const matchStatus = !status || o.status === status;
-    return matchBusca && matchStatus;
+  var busca  = document.getElementById('filtro-busca').value.toLowerCase();
+  var status = document.getElementById('filtro-status').value;
+  var fil = orcamentos.filter(function(o){
+    var mb = !busca || (o.cliente||'').toLowerCase().includes(busca) || String(o.id).includes(busca);
+    var ms = !status || o.status===status;
+    return mb&&ms;
   });
-  renderizarLista(filtrados);
+  renderizarLista(fil);
 }
 
 function renderizarLista(lista) {
-  const tbody = document.getElementById('lista-orcamentos');
+  var tbody = document.getElementById('lista-orcamentos');
   if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="estado-vazio"><div class="icone-vazio">📭</div><p>Nenhum orçamento encontrado.</p></div></td></tr>`;
+    tbody.innerHTML='<tr><td colspan="7"><div class="estado-vazio">Nenhum orçamento encontrado.</div></td></tr>';
     return;
   }
-
-  tbody.innerHTML = lista.map(o => `
-    <tr>
-      <td><strong>#${o.id}</strong></td>
-      <td>${o.cliente || '—'}</td>
-      <td>${o.solicitante||o.referencia  || '—'}</td>
-      <td>${formatarData(o.criado_em)}</td>
-      <td><strong>${formatarMoeda(o.total||0)}</strong></td>
-      <td>
-        <button class="status-btn status-${o.status||'pendente'}" onclick="ciclarStatus(${o.id},'${o.status||'pendente'}')">
-          ${(o.status||'pendente').toUpperCase()}
-        </button>
-      </td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="btn btn-secundario btn-sm" onclick="editarOrcamento(${o.id})">✏️ Editar</button>
-        <button class="btn btn-secundario btn-sm" onclick="copiarLink(${o.id})">🔗 Link</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = lista.map(function(o){
+    var data = '';
+    if (o.criado_em) { var d=new Date(o.criado_em); data=d.toLocaleDateString('pt-BR'); }
+    var st = o.status||'pendente';
+    return '<tr>'
+      +'<td><strong>#'+o.id+'</strong></td>'
+      +'<td>'+(o.cliente||'—')+'</td>'
+      +'<td>'+(o.solicitante||o.referencia||'—')+'</td>'
+      +'<td>'+data+'</td>'
+      +'<td><strong>'+fmt(o.total)+'</strong></td>'
+      +'<td><button class="badge-status badge-'+st+'" onclick="ciclarStatus('+o.id+',\''+st+'\')" >'+st.toUpperCase()+'</button></td>'
+      +'<td style="display:flex;gap:6px;">'
+        +'<button class="btn-act btn-salvar" style="height:30px;padding:0 10px;font-size:11px" onclick="editarOrcamento('+o.id+')">✏️ Editar</button>'
+        +'<button class="btn-act btn-cancelar" style="height:30px;padding:0 10px;font-size:11px" onclick="copiarLink('+o.id+')">🔗 Link</button>'
+      +'</td>'
+      +'</tr>';
+  }).join('');
 }
 
-// =============================================
-// STATUS
-// =============================================
-const STATUS_CICLO = { pendente: 'pago', pago: 'cancelado', cancelado: 'pendente' };
-
+// ===== STATUS =====
+var STATUS_CICLO = {pendente:'pago',pago:'cancelado',cancelado:'pendente'};
 async function ciclarStatus(id, atual) {
-  const novo = STATUS_CICLO[atual] || 'pendente';
+  var novo = STATUS_CICLO[atual]||'pendente';
   try {
-    await supaPatch('orcamentos', `id=eq.${id}`, { status: novo });
-    const orc = orcamentos.find(o => o.id === id);
-    if (orc) orc.status = novo;
+    await supaPatch('orcamentos','id=eq.'+id,{status:novo});
+    var orc = orcamentos.find(function(o){return o.id===id;});
+    if (orc) orc.status=novo;
     filtrarLista();
-    toast(`Status alterado para ${novo}.`, 'sucesso');
-  } catch { toast('Erro ao alterar status.', 'erro'); }
+    toast('Status: '+novo,'sucesso');
+  } catch(e){ toast('Erro ao alterar status.','erro'); }
 }
 
-// =============================================
-// WHATSAPP
-// =============================================
+// ===== WHATSAPP =====
+function saudacao() {
+  var h=new Date().getHours();
+  return h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+}
+
 async function enviarWhatsApp() {
-  if (!editandoId) { toast('Salve o orçamento primeiro.', 'aviso'); return; }
+  if (!editandoId) { toast('Salve primeiro.','aviso'); return; }
+  var orc    = orcamentos.find(function(o){return o.id===editandoId;})||{};
+  var nome   = document.getElementById('nomeCliente').value.trim();
+  var solic  = document.getElementById('solicitante').value.trim();
+  var ref    = document.getElementById('refEvento').value.trim();
+  var val    = document.getElementById('validade').value;
+  var valFmt = val ? (function(v){var p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];})(val) : '';
+  var itens  = coletarItens();
+  var totalTxt = document.getElementById('total').textContent;
+  var link   = window.location.origin+window.location.pathname.replace('index.html','ver.html')+'?id='+editandoId;
+  var empresa= config.nome||'Printer & Co.';
 
-  const orc  = orcamentos.find(o => o.id === editandoId);
-  const nome = document.getElementById('campo-cliente').value.trim();
-  const link = `${window.location.origin}${window.location.pathname.replace('index.html','ver.html')}?id=${editandoId}`;
+  var itensTexto = itens.map(function(i){
+    return '▪ '+i.desc+' · Qtd: '+i.qtd+' · Total: '+fmt(i.total);
+  }).join('\n');
 
-  const itensTexto = coletarItens().map(i =>
-    `▪ ${i.desc} — ${i.qtd} ${i.un} × ${formatarMoeda(i.preco)} = ${formatarMoeda(i.total)}`
-  ).join('\n');
+  var msg = saudacao()+',\n\n'
+    +'Segue o orçamento da *'+empresa+'* referente a:\n'
+    +(ref?'Ref.: *'+ref+'*\n':'')
+    +'Empresa: *'+nome+'*\n'
+    +(solic?'Solicitante: *'+solic+'*\n':'')
+    +(valFmt?'Válido até: '+valFmt+'\n':'')
+    +'\nItens:\n'+itensTexto
+    +'\n\n*Total: '+totalTxt+'*\n\nEm caso de dúvidas, estamos à disposição!\n\nVisualizar orçamento:\n'+link;
 
-  const msg = `${saudacao()}, ${nome}! 👋\n\n` +
-    `Segue o orçamento da *Printer & Co.*:\n\n` +
-    `${itensTexto}\n\n` +
-    `*Total: ${document.getElementById('total').textContent}*\n\n` +
-    `📎 Ver orçamento completo:\n${link}`;
-
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
-// =============================================
-// LINK
-// =============================================
+// ===== LINK =====
 function copiarLink(id) {
-  const link = `${window.location.origin}${window.location.pathname.replace('index.html','ver.html')}?id=${id}`;
-  navigator.clipboard.writeText(link).then(() => toast('Link copiado!', 'sucesso'));
+  var link = window.location.origin+window.location.pathname.replace('index.html','ver.html')+'?id='+id;
+  navigator.clipboard.writeText(link).then(function(){ toast('Link copiado!','sucesso'); });
 }
 
-// =============================================
-// PDF
-// =============================================
+// ===== PDF =====
 async function gerarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const nome    = document.getElementById('campo-cliente').value.trim();
-  const solic   = document.getElementById('campo-solicitante').value.trim();
-  const data    = formatarData(document.getElementById('campo-data').value);
-  const validade= formatarData(document.getElementById('campo-validade').value);
-  const obs     = document.getElementById('campo-obs').value.trim();
-  const itens   = coletarItens();
-  const total   = document.getElementById('total').textContent;
-  const empresa = config.nome || 'Printer & Co.';
+  if (!editandoId) { toast('Salve o orçamento primeiro.','aviso'); return; }
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF();
+  var nome   = document.getElementById('nomeCliente').value.trim();
+  var cnpj   = document.getElementById('cnpjCliente').value.trim();
+  var solic  = document.getElementById('solicitante').value.trim();
+  var ref    = document.getElementById('refEvento').value.trim();
+  var val    = document.getElementById('validade').value;
+  var valFmt = val?(function(v){var p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];})(val):'—';
+  var obs    = document.getElementById('obs').value.trim();
+  var itens  = coletarItens();
+  var total  = document.getElementById('total').textContent;
+  var empresa= config.nome||'Printer & Co.';
 
   // Cabeçalho
-  doc.setFillColor(26, 26, 26);
-  doc.rect(0, 0, 210, 28, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14); doc.setFont(undefined, 'bold');
-  doc.text(empresa, 14, 12);
-  doc.setFontSize(8); doc.setFont(undefined, 'normal');
-  doc.text('Sistema de Gestão Comercial', 14, 18);
-  doc.setTextColor(233, 30, 140);
-  doc.text('ORÇAMENTO', 196, 12, { align: 'right' });
-  doc.setTextColor(255,255,255);
-  doc.text(`#${editandoId || '—'}`, 196, 18, { align: 'right' });
+  doc.setFillColor(26,26,26); doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text(empresa,14,12);
+  doc.setFontSize(8); doc.setFont(undefined,'normal');
+  if (config.cnpj) doc.text('CNPJ: '+config.cnpj,14,18);
+  doc.setTextColor(233,30,140); doc.setFontSize(16); doc.setFont(undefined,'bold');
+  doc.text('ORÇAMENTO',196,14,{align:'right'});
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'normal');
+  doc.text('#'+editandoId,196,20,{align:'right'});
 
-  // Info
-  doc.setTextColor(0,0,0); doc.setFontSize(10);
-  let y = 38;
-  doc.setFont(undefined, 'bold'); doc.text('Cliente:', 14, y);
-  doc.setFont(undefined, 'normal'); doc.text(nome, 40, y);
-  if (solic) {
-    doc.setFont(undefined, 'bold'); doc.text('Solicitante:', 110, y);
-    doc.setFont(undefined, 'normal'); doc.text(solic, 140, y);
-  }
-  y += 7;
-  doc.setFont(undefined, 'bold'); doc.text('Data:', 14, y);
-  doc.setFont(undefined, 'normal'); doc.text(data, 40, y);
-  doc.setFont(undefined, 'bold'); doc.text('Validade:', 110, y);
-  doc.setFont(undefined, 'normal'); doc.text(validade, 140, y);
+  var y=40;
+  doc.setTextColor(0,0,0); doc.setFontSize(9);
+  doc.setFont(undefined,'bold'); doc.text('Cliente:',14,y);
+  doc.setFont(undefined,'normal'); doc.text(nome,36,y);
+  if (cnpj){ doc.setFont(undefined,'bold'); doc.text('CNPJ:',120,y); doc.setFont(undefined,'normal'); doc.text(cnpj,136,y); }
+  y+=7;
+  if (solic){ doc.setFont(undefined,'bold'); doc.text('Solicitante:',14,y); doc.setFont(undefined,'normal'); doc.text(solic,42,y); }
+  doc.setFont(undefined,'bold'); doc.text('Validade:',120,y); doc.setFont(undefined,'normal'); doc.text(valFmt,142,y);
+  if (ref){ y+=7; doc.setFont(undefined,'bold'); doc.text('Ref.:',14,y); doc.setFont(undefined,'normal'); doc.text(ref,28,y); }
+  y+=10; doc.setDrawColor(230,230,230); doc.line(14,y,196,y); y+=8;
 
-  // Linha separadora
-  y += 10;
-  doc.setDrawColor(230,230,230); doc.line(14, y, 196, y);
-  y += 8;
-
-  // Cabeçalho tabela
-  doc.setFillColor(26,26,26);
-  doc.rect(14, y, 182, 8, 'F');
+  // Tabela
+  doc.setFillColor(26,26,26); doc.rect(14,y,182,8,'F');
   doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
-  doc.text('DESCRIÇÃO', 16, y+5.5);
-  doc.text('QTD', 110, y+5.5);
-  doc.text('UN', 125, y+5.5);
-  doc.text('PREÇO UN.', 142, y+5.5);
-  doc.text('TOTAL', 178, y+5.5, { align:'right' });
-  y += 12;
+  doc.text('DESCRIÇÃO',16,y+5.5);
+  doc.text('QTD',120,y+5.5,{align:'right'});
+  doc.text('VALOR UN.',155,y+5.5,{align:'right'});
+  doc.text('TOTAL',193,y+5.5,{align:'right'});
+  y+=12;
 
   doc.setTextColor(0,0,0); doc.setFont(undefined,'normal');
-  itens.forEach((item, idx) => {
-    if (idx % 2 === 0) { doc.setFillColor(249,249,249); doc.rect(14,y-4,182,8,'F'); }
-    doc.text(item.desc.substring(0,45), 16, y);
-    doc.text(String(item.qtd), 110, y);
-    doc.text(item.un, 125, y);
-    doc.text(formatarMoeda(item.preco), 142, y);
-    doc.text(formatarMoeda(item.total), 178, y, { align:'right' });
-    y += 8;
-    if (y > 260) { doc.addPage(); y = 20; }
+  itens.forEach(function(item,idx){
+    if(idx%2===0){doc.setFillColor(249,249,249);doc.rect(14,y-4,182,8,'F');}
+    doc.text((item.desc||'').substring(0,45),16,y);
+    doc.text(String(item.qtd),120,y,{align:'right'});
+    doc.text(fmt(item.preco),155,y,{align:'right'});
+    doc.text(fmt(item.total),193,y,{align:'right'});
+    y+=8; if(y>260){doc.addPage();y=20;}
   });
 
-  // Total
-  y += 4;
+  y+=6;
   doc.setFillColor(26,26,26); doc.rect(130,y,66,10,'F');
   doc.setTextColor(233,30,140); doc.setFont(undefined,'bold'); doc.setFontSize(11);
-  doc.text('TOTAL:', 133, y+7);
+  doc.text('TOTAL:',133,y+7);
   doc.setTextColor(255,255,255);
-  doc.text(total, 194, y+7, { align:'right' });
+  doc.text(total,194,y+7,{align:'right'});
 
-  // Obs
-  if (obs) {
-    y += 18;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('Observações:', 14, y);
-    doc.setFont(undefined,'normal');
-    const linhas = doc.splitTextToSize(obs, 180);
-    doc.text(linhas, 14, y+5);
-  }
+  if(obs){y+=18;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Observações:',14,y);doc.setFont(undefined,'normal');var linhas=doc.splitTextToSize(obs,180);doc.text(linhas,14,y+5);}
 
-  // Rodapé
   doc.setFontSize(7); doc.setTextColor(150,150,150);
-  doc.text(`${empresa} — Gerado em ${new Date().toLocaleString('pt-BR')}`, 14, 290);
-
-  doc.save(`orcamento-${editandoId || 'novo'}-${nome.replace(/\s+/g,'_')}.pdf`);
-  toast('PDF gerado!', 'sucesso');
-}
-
-// =============================================
-// ALTERAR SENHA
-// =============================================
-async function alterarSenha() {
-  const nova  = document.getElementById('nova-senha').value;
-  const conf  = document.getElementById('conf-senha').value;
-  if (nova.length < 6) { toast('Mínimo 6 caracteres.', 'erro'); return; }
-  if (nova !== conf)   { toast('Senhas não conferem.', 'erro'); return; }
-
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      method: 'PUT',
-      headers: headersAuth(),
-      body: JSON.stringify({ password: nova })
-    });
-    if (!res.ok) throw new Error();
-    toast('Senha alterada!', 'sucesso');
-    fecharModal('modal-senha');
-  } catch { toast('Erro ao alterar senha.', 'erro'); }
+  doc.text(empresa+' — Gerado em '+new Date().toLocaleString('pt-BR'),14,290);
+  doc.save('orcamento-'+editandoId+'-'+nome.replace(/\s+/g,'_')+'.pdf');
+  toast('PDF gerado!','sucesso');
 }
 
 // Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if('serviceWorker'in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
 </script>
 </body>
 </html>
