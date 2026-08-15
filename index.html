@@ -1439,12 +1439,12 @@
     doc.text('Orçamento',pw-mr,28,{align:'right'});
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(160,160,160);
     var numPdf = _orcAtual && _orcAtual.numero ? String(_orcAtual.numero).padStart(4,'0') : 'A gerar';
-    doc.text('Nº',pw-mr-30,33); doc.text('EMISSÃO',pw-mr-30,39); doc.text('VALIDADE',pw-mr-30,45);
+    doc.text("Nº",pw-mr-22,33,{align:"right"}); doc.text("EMISSÃO",pw-mr-22,39,{align:"right"}); doc.text("VALIDADE",pw-mr-22,45,{align:"right"});
     doc.setTextColor(210,210,210); doc.text(numPdf,pw-mr,33,{align:'right'}); doc.text(hoje,pw-mr,39,{align:'right'}); doc.text(valStr,pw-mr,45,{align:'right'});
     if (ref) {
       var refLines = doc.splitTextToSize(ref, 90);
-      var refY = 49;
-      doc.setTextColor(150,150,150); doc.text('REF.', ml, refY);
+      var refLines = doc.splitTextToSize(ref, 85); var refY = 51;
+      doc.setTextColor(150,150,150); doc.text("REF.",pw-mr-22,51,{align:"right"});
       doc.setTextColor(210,210,210);
       doc.text(refLines[0], pw-mr, refY, {align:'right'});
       if (refLines[1]) { doc.text(refLines[1], pw-mr, refY+5, {align:'right'}); }
@@ -1459,8 +1459,7 @@
     doc.text('EMITIDO POR', colE, y, {align:'right'});
     y += 5;
     doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(17,17,17);
-    var clienteTrunc = cliente.length > 35 ? cliente.substring(0,32)+'...' : cliente;
-    doc.text(clienteTrunc, colC, y);
+    var clienteLines = doc.splitTextToSize(cliente, colN - colC - 5); doc.text(clienteLines[0], colC, y); if (clienteLines[1]) { doc.text(clienteLines[1], colC, y+5); }
     doc.setFontSize(10); doc.setFont('helvetica','normal');
     doc.text(cnpjCli || '—', colN, y);
     doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(17,17,17);
