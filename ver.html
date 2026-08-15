@@ -156,6 +156,7 @@
           + '<div class="doc-label">Documento Comercial</div>'
           + '<div class="doc-title">Orçamento</div>'
           + '<div class="meta">'
+            + '<div><strong>Nº</strong> &nbsp;'+(d.numero ? String(d.numero).padStart(4,'0') : '—')+'</div>'
             + '<div><strong>Emissão</strong> &nbsp;'+new Date().toLocaleDateString('pt-BR')+'</div>'
             + '<div><strong>Validade</strong> &nbsp;'+fmtDate(v)+'</div>'
             + (d.r||d.referencia ? '<div><strong>Ref.</strong> &nbsp;'+(d.r||d.referencia)+'</div>' : '')

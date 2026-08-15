@@ -124,10 +124,12 @@
   .masthead-doc-title {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 36px; font-weight: 700; letter-spacing: -0.03em;
-    color: #ffffff; line-height: 1; margin-bottom: 12px;
+    color: #ffffff; line-height: 1; margin-bottom: 6px;
     text-shadow: 0 2px 12px rgba(233,30,140,0.2);
   }
-  .meta-k { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); }
+  .masthead-meta { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+  .meta-row { display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; }
+  .meta-k { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); min-width: 56px; text-align: right; }
   .meta-v { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: rgba(255,255,255,0.85); letter-spacing: 0.04em; }
 
   /* CLIENT */
@@ -1437,8 +1439,8 @@
     doc.text('Orçamento',pw-mr,28,{align:'right'});
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(160,160,160);
     var numPdf = _orcAtual && _orcAtual.numero ? String(_orcAtual.numero).padStart(4,'0') : 'A gerar';
-    doc.text('Nº',pw-mr-30,31); doc.text('EMISSÃO',pw-mr-30,37); doc.text('VALIDADE',pw-mr-30,43);
-    doc.setTextColor(210,210,210); doc.text(numPdf,pw-mr,31,{align:'right'}); doc.text(hoje,pw-mr,37,{align:'right'}); doc.text(valStr,pw-mr,43,{align:'right'});
+    doc.text('Nº',pw-mr-30,33); doc.text('EMISSÃO',pw-mr-30,39); doc.text('VALIDADE',pw-mr-30,45);
+    doc.setTextColor(210,210,210); doc.text(numPdf,pw-mr,33,{align:'right'}); doc.text(hoje,pw-mr,39,{align:'right'}); doc.text(valStr,pw-mr,45,{align:'right'});
     if (ref) {
       var refLines = doc.splitTextToSize(ref, 90);
       var refY = 49;
