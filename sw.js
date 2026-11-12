@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-v3.14-backup-local-v1';
+var CACHE = 'printer-orcamento-v3.15-recursos-premium-v1';
 var FILES = [
   './',
   './index.html',

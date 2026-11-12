@@ -368,9 +368,23 @@
   .nav-item.active { color: white; border-left-color: #E91E8C; background: rgba(233,30,140,0.1); }
   .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.7; }
   .nav-item.active svg { opacity: 1; }
+  .nav-item.premium-locked { align-items: flex-start; }
+  .nav-item.premium-locked:hover { background: rgba(233,30,140,0.08); }
+  .premium-nav-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 4px; }
+  .premium-nav-title { display: flex; align-items: center; gap: 6px; }
+  .premium-lock-icon { width: 12px !important; height: 12px !important; color: #E91E8C; opacity: 1 !important; }
+  .premium-badge { align-self: flex-start; padding: 2px 6px; border-radius: 999px; background: rgba(233,30,140,0.16); border: 1px solid rgba(233,30,140,0.45); color: #ff70ba; font-size: 8px; font-weight: 700; letter-spacing: .04em; line-height: 1.2; text-transform: uppercase; white-space: nowrap; }
+  .nav-item.premium-unlocked .premium-only { display: none; }
   .nav-item.danger { color: rgba(255,100,100,0.7); }
   .nav-item.danger:hover { color: #ff6464; background: rgba(255,100,100,0.06); }
   .sidebar-footer { padding: 0.75rem 1.25rem; border-top: 0.5px solid rgba(255,255,255,0.08); }
+  .premium-modal-box { max-width: 430px; text-align: center; padding: 2rem 1.75rem; }
+  .premium-modal-icon { width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #E91E8C; background: rgba(233,30,140,0.10); }
+  .premium-modal-icon svg { width: 24px; height: 24px; }
+  .premium-modal-kicker { color: #E91E8C; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+  .premium-modal-box h3 { margin: 7px 0 10px; font-size: 21px; color: #111; }
+  .premium-modal-box p { margin: 0 auto 20px; max-width: 350px; color: #666; font-size: 14px; line-height: 1.55; }
+  .premium-modal-box button { width: 100%; max-width: 180px; }
 
   /* MAIN CONTENT */
   .main-content {
@@ -636,14 +650,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Clientes
     </div>
-    <div class="nav-item" id="navFinanceiro" onclick="showPanel('financeiro')">
+    <div class="nav-item premium-locked" id="navFinanceiro" onclick="abrirRecursoProtegido('financeiro')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Financeiro
+      <span class="premium-nav-copy"><span class="premium-nav-title">Financeiro <svg class="premium-only premium-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span class="premium-only premium-badge">Recurso Premium</span></span>
     </div>
-    <div class="nav-section admin-only" id="navSectionAdmin" style="display:none">Administração</div>
-    <div class="nav-item admin-only" id="navHistorico" onclick="showPanel('historico')" style="display:none">
+    <div class="nav-section" id="navSectionAdmin">Administração</div>
+    <div class="nav-item premium-locked" id="navHistorico" onclick="abrirRecursoProtegido('historico')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 5 7.1L3 8"/><path d="M12 7v5l3 2"/></svg>
-      Histórico
+      <span class="premium-nav-copy"><span class="premium-nav-title">Histórico <svg class="premium-only premium-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span class="premium-only premium-badge">Recurso Premium</span></span>
     </div>
     <div class="nav-item admin-only" id="navAdmin" onclick="showPanel('admin')" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -978,6 +992,16 @@
   </div><!-- fim panelAdmin -->
 
 </div><!-- fim main-content -->
+
+<div class="modal-edit-bg" id="modalPremium" role="dialog" aria-modal="true" aria-labelledby="premiumTitulo">
+  <div class="modal-box premium-modal-box">
+    <div class="premium-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+    <div class="premium-modal-kicker">Recurso Premium</div>
+    <h3 id="premiumTitulo">Funcionalidade disponível para contratação</h3>
+    <p>Este recurso faz parte do Plano Premium. Entre em contato com o administrador para conhecer as opções de liberação.</p>
+    <button class="modal-btn-save" type="button" onclick="fecharModalPremium()">Entendi</button>
+  </div>
+</div>
 
 <!-- MODAL NOVO USUÁRIO -->
 <div class="modal-bg" id="modalNovoUsuario">
@@ -1886,7 +1910,38 @@ function lerLinkOrcamento() {
     window.location.href = './login.html';
   }
 
+  function usuarioEhAdministrador() { return emailSessaoAtual() === ADMIN_EMAIL; }
+  function exibirModalPremium() {
+    closeSidebar();
+    var modal = document.getElementById('modalPremium');
+    if (modal) modal.classList.add('open');
+  }
+  function fecharModalPremium() {
+    var modal = document.getElementById('modalPremium');
+    if (modal) modal.classList.remove('open');
+  }
+  function abrirRecursoProtegido(panel) {
+    if (!usuarioEhAdministrador()) { exibirModalPremium(); return; }
+    showPanel(panel);
+  }
+  function atualizarRecursosPremium() {
+    var liberado = usuarioEhAdministrador();
+    ['navFinanceiro', 'navHistorico'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('premium-locked', !liberado);
+      el.classList.toggle('premium-unlocked', liberado);
+    });
+    var navAdmin = document.getElementById('navAdmin');
+    if (navAdmin) navAdmin.style.display = liberado ? '' : 'none';
+  }
+  var _modalPremium = document.getElementById('modalPremium');
+  if (_modalPremium) _modalPremium.addEventListener('click', function(e) { if (e.target === this) fecharModalPremium(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') fecharModalPremium(); });
+
   function showPanel(panel) {
+    if ((panel === 'financeiro' || panel === 'historico') && !usuarioEhAdministrador()) { exibirModalPremium(); return; }
+    if (panel === 'admin' && !usuarioEhAdministrador()) return;
     document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
     var panelEl = document.getElementById('panel' + panel.charAt(0).toUpperCase() + panel.slice(1));
@@ -1919,6 +1974,7 @@ function lerLinkOrcamento() {
       var s = JSON.parse(sess);
       var token = s.access_token || '';
       if (!token) return;
+      atualizarRecursosPremium();
 
       // Buscar dados do usuário via token
       fetch('https://cxgpuwqihdojisishmzv.supabase.co/auth/v1/user', {
@@ -1936,17 +1992,12 @@ function lerLinkOrcamento() {
         if (email === ADMIN_EMAIL) {
           var roleEl = document.getElementById('sidebarRole');
           if (roleEl) roleEl.textContent = 'Administrador';
-          var secEl = document.getElementById('navSectionAdmin');
-          if (secEl) secEl.style.display = '';
-          var navAdminEl = document.getElementById('navAdmin');
-          if (navAdminEl) navAdminEl.style.display = '';
-          var histEl = document.getElementById('navHistorico');
-          if (histEl) histEl.style.display = '';
         }
         // Salvar email na sessão para uso futuro
         s.user = s.user || {};
         s.user.email = email;
         localStorage.setItem('printerCo_session', JSON.stringify(s));
+        atualizarRecursosPremium();
       })
       .catch(function() {
         // Fallback: usar dados salvos
@@ -1955,6 +2006,11 @@ function lerLinkOrcamento() {
           var nome = email.replace('@printer.interno', '');
           var el = document.getElementById('sidebarUsername');
           if (el) el.textContent = nome.charAt(0).toUpperCase() + nome.slice(1);
+          if (email === ADMIN_EMAIL) {
+            var roleEl = document.getElementById('sidebarRole');
+            if (roleEl) roleEl.textContent = 'Administrador';
+          }
+          atualizarRecursosPremium();
         }
       });
     } catch(e) {}
@@ -2071,6 +2127,7 @@ function lerLinkOrcamento() {
   }
 
   function carregarHistorico(forcar) {
+    if (!usuarioEhAdministrador()) { exibirModalPremium(); return; }
     if (_historicoOrcamentos && !forcar) { renderHistorico(); return; }
     var tbody = document.getElementById('historicoTableBody');
     var resumo = document.getElementById('historicoResumo');
@@ -2268,6 +2325,7 @@ function lerLinkOrcamento() {
   });
 
   function carregarUsuarios() {
+    if (!usuarioEhAdministrador()) return;
     var tbody = document.getElementById('usersTableBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#AAA;padding:20px">Carregando...</td></tr>';
     chamarAdminUsuarios('listar')

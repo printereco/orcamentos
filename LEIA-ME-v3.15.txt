@@ -1,0 +1,14 @@
+PRINTER & CO. - ORCAMENTOS v3.15 (RECURSOS PREMIUM)
+
+- Financeiro e Historico aparecem para a Karina com cadeado e selo Recurso Premium.
+- Ao clicar, os dois recursos exibem a mensagem do Plano Premium.
+- As telas e os dados desses recursos nao sao carregados para a Karina.
+- Usuarios permanece oculto e exclusivo para o proprietario Alessandro.
+- O acesso do proprietario continua liberado normalmente.
+- Orcamentos, clientes, PDF, links, Historico paginado e backup foram preservados.
+
+TESTES
+- Proprietario acessou os recursos normalmente.
+- Karina viu os dois selos, mas nao abriu as telas protegidas.
+- Usuarios permaneceu invisivel para a Karina.
+- Historico, paginacao, PDF publico e backup continuaram funcionando.
