@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-karina-homologacao-v2';
+var CACHE = 'printer-orcamento-v3.12-seguranca-v1';
 var FILES = [
   './',
   './index.html',
