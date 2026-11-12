@@ -10,13 +10,17 @@
   .card { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
 
   /* HEADER */
-  .hdr { background: #111; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .hdr { background: #111; padding: 1.75rem 2rem 1.35rem; display: grid; grid-template-columns: auto minmax(240px, 1fr); align-items: center; gap: 1.25rem 2rem; }
   .hdr img { height: 60px; width: auto; }
-  .hdr-right { text-align: right; }
+  .hdr-right { text-align: right; justify-self: end; min-width: 240px; }
   .doc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #E91E8C; margin-bottom: 4px; }
   .doc-title { font-size: 28px; font-weight: 700; color: white; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px; }
-  .meta { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.9; }
-  .meta strong { color: rgba(255,255,255,0.8); }
+  .meta { display: grid; gap: 5px; font-size: 10px; color: rgba(255,255,255,0.62); }
+  .meta-line { display: grid; grid-template-columns: 64px auto; align-items: baseline; justify-content: end; gap: 12px; }
+  .meta-line strong { color: rgba(255,255,255,0.88); }
+  .hdr-ref { grid-column: 1 / -1; display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: start; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.12); }
+  .hdr-ref-label { color: #E91E8C; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.55; }
+  .hdr-ref-value { color: rgba(255,255,255,0.78); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; text-align: left; }
 
   /* BODY */
   .body { padding: 1.75rem 2rem; }
@@ -71,9 +75,11 @@
   .btn-salvar:hover { background: #E91E8C; }
   .btn-rodape { text-align: center; padding: 1.5rem 2rem 2rem; border-top: 1px solid #EEE; }
   @media (max-width: 480px) {
-    .hdr { padding: 1rem; flex-direction: row; }
+    .hdr { padding: 1rem; grid-template-columns: auto minmax(160px, 1fr); gap: 1rem; }
     .hdr img { height: 44px; }
+    .hdr-right { min-width: 0; }
     .doc-title { font-size: 20px; }
+    .hdr-ref { grid-template-columns: 1fr; gap: 4px; padding-top: .8rem; }
     .body { padding: 1.25rem 1rem; }
     .client-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
     .client-grid > div:last-child { grid-column: 1 / -1; }
@@ -156,12 +162,12 @@
           + '<div class="doc-label">Documento Comercial</div>'
           + '<div class="doc-title">Orçamento</div>'
           + '<div class="meta">'
-            + '<div><strong>Nº</strong> &nbsp;'+(d.numero ? String(d.numero).padStart(4,'0') : '—')+'</div>'
-            + '<div><strong>Emissão</strong> &nbsp;'+new Date().toLocaleDateString('pt-BR')+'</div>'
-            + '<div><strong>Validade</strong> &nbsp;'+fmtDate(v)+'</div>'
-            + (d.r||d.referencia ? '<div><strong>Ref.</strong> &nbsp;'+(d.r||d.referencia)+'</div>' : '')
+            + '<div class="meta-line"><strong>Nº</strong><span>'+(d.numero ? String(d.numero).padStart(4,'0') : '—')+'</span></div>'
+            + '<div class="meta-line"><strong>Emissão</strong><span>'+new Date().toLocaleDateString('pt-BR')+'</span></div>'
+            + '<div class="meta-line"><strong>Validade</strong><span>'+fmtDate(v)+'</span></div>'
           + '</div>'
         + '</div>'
+        + (d.r||d.referencia ? '<div class="hdr-ref"><div class="hdr-ref-label">Ref.</div><div class="hdr-ref-value">'+(d.r||d.referencia)+'</div></div>' : '')
       + '</div>'
       + '<div class="body">'
         + '<div class="client-grid">'

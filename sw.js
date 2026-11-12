@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-v3.12-seguranca-v1';
+var CACHE = 'printer-orcamento-v3.13-historico-paginado-v2';
 var FILES = [
   './',
   './index.html',
