@@ -432,6 +432,10 @@
   .history-search:focus { border-color: #111; }
   .history-refresh { height: 38px; border: 0; border-radius: 8px; padding: 0 16px; background: #111; color: #FFF; font-weight: 700; cursor: pointer; }
   .history-refresh:hover { background: #E91E8C; }
+  .history-actions { display: flex; gap: 10px; }
+  .history-backup { height: 38px; border: 1.5px solid #111; border-radius: 8px; padding: 0 16px; background: #FFF; color: #111; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .history-backup:hover { border-color: #E91E8C; background: #E91E8C; color: #FFF; }
+  .history-backup:disabled { opacity: .55; cursor: wait; }
   .history-summary { padding: 10px 16px; color: #777; font-size: 12px; border-bottom: 1px solid #EEE; }
   .history-table-wrap { overflow-x: auto; }
   .history-table { width: 100%; min-width: 920px; border-collapse: collapse; }
@@ -484,7 +488,8 @@
     .page { padding: 0 0 5rem; }
     .admin-wrap { padding: 1rem 1rem 5rem; }
     .history-toolbar { flex-direction: column; }
-    .history-refresh { width: 100%; }
+    .history-actions { width: 100%; }
+    .history-refresh, .history-backup { flex: 1; }
     .history-footer { flex-direction: column; align-items: stretch; }
     .history-per-page { justify-content: space-between; }
     .history-pagination { justify-content: center; }
@@ -923,7 +928,10 @@
         </div>
         <div class="history-toolbar">
           <input class="history-search" id="historicoBusca" type="search" placeholder="Buscar por número, cliente, solicitante ou evento">
-          <button class="history-refresh" type="button" onclick="carregarHistorico(true)">Atualizar</button>
+          <div class="history-actions">
+            <button class="history-backup" id="btnBackupHistorico" type="button" onclick="fazerBackupHistorico()">Fazer backup</button>
+            <button class="history-refresh" type="button" onclick="carregarHistorico(true)">Atualizar</button>
+          </div>
         </div>
         <div class="history-summary" id="historicoResumo">Abra esta tela para carregar os orçamentos.</div>
         <div class="history-table-wrap">
@@ -1166,7 +1174,27 @@
       });
     }
 
-    return { salvar: salvar, buscar: buscar, listar: listar };
+    function listarCompleto() {
+      var todos = [];
+      var tamanhoPagina = 500;
+      function buscarPagina(offset) {
+        return fetch(BASE + '?select=*&order=id.asc&offset=' + offset + '&limit=' + tamanhoPagina, {
+          headers: cabecalhosSupabase()
+        })
+        .then(function(r) {
+          if (!r.ok) { throw new Error('Erro ao preparar backup: ' + r.status); }
+          return r.json();
+        })
+        .then(function(rows) {
+          rows = Array.isArray(rows) ? rows : [];
+          todos = todos.concat(rows);
+          return rows.length === tamanhoPagina ? buscarPagina(offset + tamanhoPagina) : todos;
+        });
+      }
+      return buscarPagina(0);
+    }
+
+    return { salvar: salvar, buscar: buscar, listar: listar, listarCompleto: listarCompleto };
   })();
   // ════════════════════════════════════════════════════
 
@@ -2067,6 +2095,141 @@ function lerLinkOrcamento() {
     renderHistorico();
   });
 
+  // ── BACKUP LOCAL DO PROPRIETARIO ─────────────────────
+  function emailSessaoAtual() {
+    try {
+      var sessao = JSON.parse(localStorage.getItem('printerCo_session') || '{}');
+      return String((sessao.user && sessao.user.email) || '').toLowerCase();
+    } catch(e) { return ''; }
+  }
+
+  function csvCelula(valor) {
+    var texto = valor == null ? '' : String(valor);
+    if (/^[=+\-@]/.test(texto)) texto = "'" + texto;
+    return '"' + texto.replace(/"/g, '""') + '"';
+  }
+
+  function criarCsv(cabecalhos, linhas) {
+    var conteudo = [cabecalhos.map(csvCelula).join(';')];
+    linhas.forEach(function(linha) { conteudo.push(linha.map(csvCelula).join(';')); });
+    return '\uFEFF' + conteudo.join('\r\n');
+  }
+
+  function numeroBackup(valor) {
+    return (Number(valor) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function nomeArquivoBackup() {
+    var d = new Date();
+    function dois(n) { return String(n).padStart(2, '0'); }
+    return 'backup-printer-orcamentos-' + d.getFullYear() + '-' + dois(d.getMonth() + 1) + '-' + dois(d.getDate()) + '_' + dois(d.getHours()) + '-' + dois(d.getMinutes()) + '.zip';
+  }
+
+  function buscarDadosBackup(url) {
+    return fetch(url, { headers: cabecalhosSupabase() }).then(function(r) {
+      if (!r.ok) throw new Error('Não foi possível consultar todos os dados do backup.');
+      return r.json();
+    });
+  }
+
+  function gerarPacoteBackup() {
+    if (emailSessaoAtual() !== ADMIN_EMAIL) return Promise.reject(new Error('O backup está disponível somente para o proprietário.'));
+    if (!window.JSZip) return Promise.reject(new Error('O recurso de backup ainda está carregando. Tente novamente em alguns segundos.'));
+    return Promise.all([
+      SupabaseService.listarCompleto(),
+      buscarDadosBackup(SUPABASE_URL + '/rest/v1/clientes?select=*&order=nome.asc'),
+      buscarDadosBackup(SUPABASE_URL + '/rest/v1/config?select=*&limit=1')
+    ]).then(function(resultados) {
+      var orcamentos = Array.isArray(resultados[0]) ? resultados[0] : [];
+      var clientes = Array.isArray(resultados[1]) ? resultados[1] : [];
+      var configuracao = Array.isArray(resultados[2]) && resultados[2][0] ? resultados[2][0] : {};
+      var geradoEm = new Date().toISOString();
+      var itensTotal = orcamentos.reduce(function(soma, orc) { return soma + (Array.isArray(orc.itens) ? orc.itens.length : 0); }, 0);
+      var pacote = {
+        formato: 'printer-co-backup',
+        versao: 1,
+        gerado_em: geradoEm,
+        totais: { orcamentos: orcamentos.length, itens: itensTotal, clientes: clientes.length },
+        dados: { orcamentos: orcamentos, clientes: clientes, configuracao: configuracao }
+      };
+      var linhasOrcamentos = orcamentos.map(function(orc) {
+        var link = orc.public_token
+          ? 'https://printereco.github.io/orcamentos/ver.html?t=' + orc.public_token
+          : 'https://printereco.github.io/orcamentos/ver.html?id=' + orc.id;
+        return [formatarNumero(orc.numero), orc.criado_em || '', orc.cliente || '', orc.cnpj_cli || '', orc.solicitante || '', orc.referencia || '', orc.valido_ate || '', numeroBackup(orc.desconto), orc.tipo_desc || '', numeroBackup(totalDoOrcamento(orc)), orc.obs || '', link];
+      });
+      var linhasItens = [];
+      orcamentos.forEach(function(orc) {
+        (Array.isArray(orc.itens) ? orc.itens : []).forEach(function(item, indice) {
+          linhasItens.push([formatarNumero(orc.numero), indice + 1, item.desc || '', item.qty || 0, numeroBackup(item.unit), numeroBackup((Number(item.qty) || 0) * (Number(item.unit) || 0))]);
+        });
+      });
+      var linhasClientes = clientes.map(function(c) { return [c.id || '', c.nome || '', c.cnpj || '', c.insc_mun || '', c.insc_est || '', c.endereco || '', c.email || '']; });
+      var instrucoes = [
+        'BACKUP PRINTER & CO. - ORÇAMENTOS',
+        '',
+        'Gerado em: ' + new Date(geradoEm).toLocaleString('pt-BR'),
+        'Orçamentos: ' + orcamentos.length,
+        'Itens: ' + itensTotal,
+        'Clientes: ' + clientes.length,
+        '',
+        'CONTEÚDO',
+        '- backup-completo.json: cópia integral preparada para futura restauração.',
+        '- orcamentos.csv: relação dos orçamentos para abrir no Excel.',
+        '- itens.csv: todos os itens separados por orçamento.',
+        '- clientes.csv: cadastro de clientes.',
+        '- configuracao.json: dados públicos da empresa usados nos documentos.',
+        '',
+        'IMPORTANTE',
+        'Guarde este ZIP em local seguro. Ele não contém senhas de usuários.',
+        'Não altere o arquivo backup-completo.json se pretender usá-lo em uma futura restauração.'
+      ].join('\r\n');
+      var zip = new window.JSZip();
+      zip.file('backup-completo.json', JSON.stringify(pacote, null, 2));
+      zip.file('orcamentos.csv', criarCsv(['Nº', 'Criado em', 'Cliente', 'CNPJ/CPF', 'Solicitante', 'Evento / referência', 'Validade', 'Desconto', 'Tipo de desconto', 'Total', 'Observações', 'Link público'], linhasOrcamentos));
+      zip.file('itens.csv', criarCsv(['Nº do orçamento', 'Item', 'Descrição', 'Quantidade', 'Valor unitário', 'Total do item'], linhasItens));
+      zip.file('clientes.csv', criarCsv(['ID', 'Nome', 'CNPJ', 'Inscrição municipal', 'Inscrição estadual', 'Endereço', 'E-mail'], linhasClientes));
+      zip.file('configuracao.json', JSON.stringify(configuracao, null, 2));
+      zip.file('LEIA-ME.txt', instrucoes);
+      return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }).then(function(blob) {
+        return { blob: blob, nome: nomeArquivoBackup(), pacote: pacote };
+      });
+    });
+  }
+
+  function salvarArquivoBackup(backup) {
+    if (window.showSaveFilePicker) {
+      return window.showSaveFilePicker({
+        suggestedName: backup.nome,
+        types: [{ description: 'Backup ZIP', accept: { 'application/zip': ['.zip'] } }]
+      }).then(function(handle) { return handle.createWritable(); })
+        .then(function(writable) { return writable.write(backup.blob).then(function() { return writable.close(); }); });
+    }
+    var url = URL.createObjectURL(backup.blob);
+    var link = document.createElement('a');
+    link.href = url; link.download = backup.nome; document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+    return Promise.resolve();
+  }
+
+  function fazerBackupHistorico() {
+    var btn = document.getElementById('btnBackupHistorico');
+    if (btn) { btn.disabled = true; btn.textContent = 'Preparando...'; }
+    gerarPacoteBackup()
+      .then(function(backup) {
+        return salvarArquivoBackup(backup).then(function() {
+          toast('Backup salvo com ' + backup.pacote.totais.orcamentos + ' orçamentos e ' + backup.pacote.totais.clientes + ' clientes.');
+        });
+      })
+      .catch(function(err) {
+        if (err && err.name === 'AbortError') toast('Backup cancelado. Nenhum arquivo foi criado.');
+        else { console.error(err); toast(err.message || 'Não foi possível criar o backup.'); }
+      })
+      .finally(function() {
+        if (btn) { btn.disabled = false; btn.textContent = 'Fazer backup'; }
+      });
+  }
+
   // ── ADMIN: CARREGAR USUÁRIOS ──────────────────────────
   // Operações privilegiadas passam exclusivamente pela Edge Function,
   // que valida o e-mail do proprietário antes de usar a chave secreta.
@@ -2461,6 +2624,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+<script src="./jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 </body>

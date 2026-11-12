@@ -1,4 +1,4 @@
-var CACHE = 'printer-orcamento-v3.13-historico-paginado-v2';
+var CACHE = 'printer-orcamento-v3.14-backup-local-v1';
 var FILES = [
   './',
   './index.html',
@@ -6,7 +6,8 @@ var FILES = [
   './login.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './jszip.min.js'
 ];
 
 self.addEventListener('install', function(e) {
